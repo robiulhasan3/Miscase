@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>বিবিধ মোকদ্দমা ব্যবস্থাপনা - সহকারী কমিশনার (ভূমি)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area *, #printable-cause-list, #printable-cause-list * { visibility: visible; }
+            #printable-area, #printable-cause-list { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen text-slate-800">
+
+    <!-- হেডার -->
+    <header class="bg-emerald-800 text-white p-4 shadow-md no-print">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর</h1>
+                <p class="text-xs text-emerald-200">বিবিধ মোকদ্দমা ও ডিজিটাল আদেশনামা সিস্টেম</p>
+            </div>
+            <div id="user-info" class="hidden flex items-center gap-3">
+                <span id="user-role-badge" class="bg-emerald-600 px-3 py-1 rounded-full text-xs font-semibold"></span>
+                <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">লগআউট</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6">
+
+        <!-- লগইন সেকশন -->
+        <section id="auth-section" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-md mt-10">
+            <h2 class="text-lg font-bold text-center mb-1 text-emerald-800">সিস্টেমে প্রবেশ করুন</h2>
+            <p class="text-xs text-slate-500 text-center mb-6">বাঞ্ছারামপুর ভূমি আদালত অটো-প্যানেল</p>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">ইমেইল / ইউজার আইডি</label>
+                    <input type="email" id="login-email" required placeholder="ইমেইল লিখুন" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">পাসওয়ার্ড</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2 rounded-lg font-semibold text-sm transition">লগইন করুন</button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t">
+                <p class="text-xs text-slate-500 mb-2 font-medium text-center">দ্রুত প্রবেশের জন্য নির্বাচন করুন:</p>
+                <div class="flex gap-2">
+                    <button type="button" onclick="autoLogin('peshkar')" class="w-1/2 bg-slate-100 hover:bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs py-2 rounded font-semibold transition">
+                        পেশকার আইডি (অটো)
+                    </button>
+                    <button type="button" onclick="autoLogin('judge')" class="w-1/2 bg-slate-100 hover:bg-blue-50 text-blue-800 border border-blue-200 text-xs py-2 rounded font-semibold transition">
+                        বিচারক / AC Land (অটো)
+                    </button>
+                </div>
+            </div>
+
+            <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
+        </section>
+
+        <!-- মূল ড্যাশবোর্ড -->
+        <div id="app-dashboard" class="hidden space-y-6">
+
+            <!-- কজ লিস্ট ফিল্টার সেকশন (উভয় আইডির জন্য) -->
+            <section class="bg-white p-6 rounded-xl shadow-md no-print">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-emerald-800">দৈনিক কার্যতালিকা (Cause List)</h2>
+                        <p class="text-xs text-slate-500">নির্দিষ্ট তারিখ অনুযায়ী কার্যতালিকা দেখুন এবং প্রিন্ট করুন</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <input type="date" id="causelist-date" class="border p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <button onclick="fetchCauseList()" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800 transition">খুঁজুন</button>
+                        <button onclick="printCauseList()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800 transition">প্রিন্ট করুন</button>
+                    </div>
+                </div>
+
+                <div class="mt-4 overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-emerald-50 text-emerald-900 border-b">
+                            <tr>
+                                <th class="p-3">ক্রম</th>
+                                <th class="p-3">মামলা নং</th>
+                                <th class="p-3">বিষয়</th>
+                                <th class="p-3">পক্ষসমূহ</th>
+                                <th class="p-3">অবস্থা</th>
+                                <th class="p-3 text-right">কার্যক্রম</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cause-list-table-body">
+                            <tr>
+                                <td colspan="6" class="p-4 text-center text-slate-500">তারিখ নির্বাচন করে 'খুঁজুন' বাটন চাপুন।</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- পেশকার ড্যাশবোর্ড: নতুন কেস রুজু -->
+            <section id="peshkar-view" class="hidden bg-white p-6 rounded-xl shadow-md no-print">
+                <h2 class="text-lg font-bold text-emerald-800 mb-4 border-b pb-2">নতুন মামলা/কেস রুজুকরণ (পেশকার)</h2>
+                <form onsubmit="createCase(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">মামলা নম্বর</label>
+                        <input type="text" id="case-no" placeholder="যেমন: ১২/২০২৬" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">মৌজা ও খতিয়ান</label>
+                        <input type="text" id="case-location" placeholder="যেমন: উজানচর, খতিয়ান নং- ৪৫০" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">বাদী/আবেদনকারী</label>
+                        <input type="text" id="plaintiff" placeholder="নাম ও ঠিকানা" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">বিবাদী/প্রতিপক্ষ</label>
+                        <input type="text" id="defendant" placeholder="নাম ও ঠিকানা" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium mb-1">মামলার বিষয়বস্তু/সারসংক্ষেপ</label>
+                        <input type="text" id="case-subject" placeholder="যেমন: নামজারি না-মঞ্জুরের বিরুদ্ধে আপিল" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium mb-1">কেস রুজুর সময় প্রাথমিক বিবরণ/তথ্য (পেশকার নোট)</label>
+                        <textarea id="initial-note" rows="3" required placeholder="নথি উপস্থাপন করা হলো। প্রয়োজনীয় কাগজপত্র সংযুক্ত আছে..." class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                    </div>
+                    <button type="submit" class="md:col-span-2 bg-emerald-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-800">কেস রুজু করে বিচারকের নিকট পাঠান</button>
+                </form>
+            </section>
+
+            <!-- পেশকার: শুনানীর দিনে নথি উপস্থাপন ও রায় দেখার প্যানেল -->
+            <section id="peshkar-submission-section" class="hidden bg-white p-6 rounded-xl shadow-md space-y-4 no-print border-2 border-emerald-600">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h2 class="text-lg font-bold text-emerald-800">পুনঃশুনানি ও নথি উপস্থাপন (পেশকার)</h2>
+                    <span id="peshkar-active-case-title" class="font-semibold text-slate-700"></span>
+                </div>
+                
+                <div id="next-hearing-notice" class="hidden bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg font-semibold"></div>
+
+                <form onsubmit="submitPeshkarNote(event)" class="space-y-3">
+                    <input type="hidden" id="peshkar-selected-case-id">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">আজকের শুনানীর জন্য নথি উপস্থাপন বিবরণ</label>
+                        <textarea id="peshkar-hearing-note" rows="3" required placeholder="আজ শুনানীর দিন ধার্য আছে। বাদী উপস্থিত, বিবাদী অনুপস্থিত..." class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">নথি পেশ/উপস্থাপন সম্পন্ন করুন</button>
+                        <button type="button" onclick="previewOrderSheet()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800">সম্পূর্ণ রায় / আদেশনামা দেখুন</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- সকল চলমান মামলা তালিকা -->
+            <section class="bg-white p-6 rounded-xl shadow-md no-print">
+                <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">সকল চলমান বিবিধ মোকদ্দমাসমূহ</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-700">
+                            <tr>
+                                <th class="p-3">মামলা নং</th>
+                                <th class="p-3">বিষয়</th>
+                                <th class="p-3">পক্ষসমূহ</th>
+                                <th class="p-3">অবস্থা / পরবর্তী শুনানির তারিখ</th>
+                                <th class="p-3 text-right">কার্যক্রম</th>
+                            </tr>
+                        </thead>
+                        <tbody id="case-list-body">
+                            <!-- ডায়নামিক ডাটা -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ইতিহাস ও বিস্তারিত দেখার সেকশন -->
+            <section id="case-history-section" class="hidden bg-white p-6 rounded-xl shadow-md space-y-4 no-print">
+                <div class="bg-slate-50 p-4 rounded-lg">
+                    <h3 class="text-sm font-bold text-slate-700 mb-2">নথির ইতিহাস ও আদেশনামা:</h3>
+                    <div id="order-history" class="space-y-3 text-xs text-slate-600 max-h-56 overflow-y-auto">
+                        <!-- আগের আদেশসমূহ -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- বিচারক সেকশন -->
+            <section id="judge-order-section" class="hidden bg-white p-6 rounded-xl shadow-md space-y-4 no-print">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h2 class="text-lg font-bold text-emerald-800">আদেশনামা লিখন ও অনুমোদন (বিচারক)</h2>
+                    <div class="flex items-center gap-3">
+                        <span id="active-case-title" class="font-semibold text-slate-600"></span>
+                        <button type="button" onclick="deleteCurrentCase()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold transition">
+                            🗑️ সম্পূর্ণ মামলা ডিলিট করুন
+                        </button>
+                    </div>
+                </div>
+
+                <div id="judge-warning-msg" class="hidden bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-semibold">
+                    ⚠️ পেশকার নথি উপস্থাপন / নোট প্রদান না করা পর্যন্ত আপনি আদেশ লিখতেই পারবেন না।
+                </div>
+
+                <form id="judge-form" onsubmit="submitOrder(event)" class="space-y-3">
+                    <input type="hidden" id="selected-case-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">আদেশের তারিখ</label>
+                            <input type="date" id="order-date" required class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">পরবর্তী শুনানির তারিখ (যদি থাকে)</label>
+                            <input type="date" id="next-date" class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">আজকের শুনানীর পর্যালোচনা ও আদেশ (Order Details)</label>
+                        <textarea id="order-text" rows="5" required placeholder="নথি উপস্থাপন করা হলো। বাদী উপস্থিত আছে..." class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"></textarea>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="is-final-verdict" class="w-4 h-4 text-emerald-600 disabled:cursor-not-allowed">
+                        <label for="is-final-verdict" class="text-sm font-medium text-red-600">এটি চূড়ান্ত রায়/নিষ্পত্তি নির্দেশক আদেশ</label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="judge-submit-btn" type="submit" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800 disabled:bg-slate-400 disabled:cursor-not-allowed">আদেশ প্রদান করুন ও পেশকারের নিকট পাঠান</button>
+                        <button type="button" onclick="previewOrderSheet()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800">আদেশনামা প্রাকদর্শন / প্রিন্ট</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- আদেশনামা প্রিন্ট ফরম্যাট (ফরম নং ৫৪৬৩) -->
+            <section id="printable-area" class="hidden bg-white p-8 border my-4">
+                <div class="text-center font-serif space-y-1 mb-6 border-b pb-4">
+                    <h2 class="text-xl font-bold">বাংলাদেশ ফরম নম্বর ৫৪৬৩</h2>
+                    <h3 class="text-lg font-bold">আদেশনামা (Order Sheet)</h3>
+                    <p class="text-sm">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                    <p class="text-sm font-bold mt-2" id="print-case-no"></p>
+                </div>
+                
+                <div class="grid grid-cols-2 text-xs mb-4 border p-2 font-serif">
+                    <div><strong>বাদী:</strong> <span id="print-plaintiff"></span></div>
+                    <div><strong>বিবাদী:</strong> <span id="print-defendant"></span></div>
+                    <div class="col-span-2 mt-1"><strong>বিষয়:</strong> <span id="print-subject"></span></div>
+                </div>
+
+                <table class="w-full border-collapse border border-slate-400 text-xs font-serif">
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="border border-slate-400 p-2 w-1/5 text-center">আদেশের ক্রমিক নং ও তারিখ</th>
+                            <th class="border border-slate-400 p-2 w-2/3 text-center">আদেশের বিবরণ</th>
+                            <th class="border border-slate-400 p-2 w-1/8 text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="print-orders-body">
+                        <!-- ডায়নামিক ডাটা -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- কজ লিস্ট প্রিন্ট ফরম্যাট -->
+            <section id="printable-cause-list" class="hidden bg-white p-8 border my-4">
+                <div class="text-center font-serif space-y-1 mb-6 border-b pb-4">
+                    <h2 class="text-xl font-bold">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর</h2>
+                    <h3 class="text-lg font-semibold">দৈনিক কার্যতালিকা (Cause List)</h3>
+                    <p class="text-sm font-bold mt-1" id="print-causelist-date-title"></p>
+                </div>
+
+                <table class="w-full border-collapse border border-slate-400 text-xs font-serif">
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="border border-slate-400 p-2 text-center">ক্রমিক</th>
+                            <th class="border border-slate-400 p-2 text-center">মামলা নম্বর</th>
+                            <th class="border border-slate-400 p-2 text-center">বিষয়বস্তু</th>
+                            <th class="border border-slate-400 p-2 text-center">বাদী ও বিবাদী</th>
+                            <th class="border border-slate-400 p-2 text-center">বর্তমান অবস্থা</th>
+                        </tr>
+                    </thead>
+                    <tbody id="print-causelist-body">
+                        <!-- ডায়নামিক ডাটা -->
+                    </tbody>
+                </table>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Firebase JS -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // --- ফায়ারবেস কনফিগারেশন ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_qib26haGD8sxmq07zgBDoR0C1lZvCFo",
+            authDomain: "miscase-739b8.firebaseapp.com",
+            projectId: "miscase-739b8",
+            storageBucket: "miscase-739b8.firebasestorage.app",
+            messagingSenderId: "477766288901",
+            appId: "1:477766288901:web:87a2726851b56a0fca3e6c",
+            measurementId: "G-3WGHLF6XE3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- Local Users ---
+        const localUsers = [
+            { email: "peshkar@banchharampur.gov.bd", password: "123", role: "peshkar", name: "পেশকার" },
+            { email: "acland@banchharampur.gov.bd", password: "123", role: "judge", name: "সহকারী কমিশনার (ভূমি)" }
+        ];
+
+        let currentUser = null;
+
+        // ডিফল্ট তারিখ আজকের সিলেক্ট করা
+        document.getElementById('causelist-date').value = new Date().toISOString().split('T')[0];
+
+        function autoLogin(role) {
+            if (role === 'peshkar') {
+                document.getElementById('login-email').value = 'peshkar@banchharampur.gov.bd';
+                document.getElementById('login-password').value = '123';
+            } else if (role === 'judge') {
+                document.getElementById('login-email').value = 'acland@banchharampur.gov.bd';
+                document.getElementById('login-password').value = '123';
+            }
+            document.getElementById('login-form').dispatchEvent(new Event('submit'));
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('login-email').value.trim();
+            const passwordInput = document.getElementById('login-password').value.trim();
+            const errorDiv = document.getElementById('auth-error');
+
+            const matchedUser = localUsers.find(
+                u => u.email.toLowerCase() === emailInput.toLowerCase() && u.password === passwordInput
+            );
+
+            if (matchedUser) {
+                currentUser = matchedUser;
+                errorDiv.classList.add('hidden');
+                
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-dashboard').classList.remove('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('user-role-badge').innerText = `পদবী: ${currentUser.name}`;
+
+                if (currentUser.role === 'peshkar') {
+                    document.getElementById('peshkar-view').classList.remove('hidden');
+                } else {
+                    document.getElementById('peshkar-view').classList.add('hidden');
+                    document.getElementById('peshkar-submission-section').classList.add('hidden');
+                }
+
+                loadCases();
+                fetchCauseList();
+            } else {
+                errorDiv.innerText = "ভুল ইমেইল বা পাসওয়ার্ড দিয়েছেন!";
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-form').reset();
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-dashboard').classList.add('hidden');
+            document.getElementById('user-info').classList.add('hidden');
+            document.getElementById('peshkar-submission-section').classList.add('hidden');
+            document.getElementById('case-history-section').classList.add('hidden');
+            document.getElementById('judge-order-section').classList.add('hidden');
+        }
+
+        async function fetchCauseList() {
+            const selectedDate = document.getElementById('causelist-date').value;
+            const tbody = document.getElementById('cause-list-table-body');
+            const printTbody = document.getElementById('print-causelist-body');
+            
+            if(!selectedDate) {
+                alert("অনুগ্রহ করে একটি তারিখ নির্বাচন করুন।");
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">ডাটা লোড হচ্ছে...</td></tr>';
+            printTbody.innerHTML = '';
+
+            try {
+                const snapshot = await db.collection('cases').where('nextDate', '==', selectedDate).get();
+                
+                if (snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-semibold">${selectedDate} তারিখে কোনো শুনানির মামলা নেই।</td></tr>`;
+                    printTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center">উক্ত তারিখে কোনো মামলা নেই।</td></tr>`;
+                    document.getElementById('print-causelist-date-title').innerText = `তারিখ: ${selectedDate}`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                let printRows = '';
+                let count = 1;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    
+                    let statusBadge = '';
+                    if (data.status === 'resolved') {
+                        statusBadge = '<span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800 font-semibold">নিষ্পত্তি</span>';
+                    } else if (data.status === 'peshkar_pending') {
+                        statusBadge = '<span class="px-2 py-1 text-xs rounded bg-amber-100 text-amber-800 font-semibold">পেশকারের কাছে অপেক্ষমান</span>';
+                    } else {
+                        statusBadge = '<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 font-semibold">বিচারকের কাছে প্রস্তুত</span>';
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold">${count}</td>
+                        <td class="p-3 font-semibold text-emerald-800">${data.caseNo}</td>
+                        <td class="p-3">${data.subject}</td>
+                        <td class="p-3 text-xs">বাদী: ${data.plaintiff}<br>বিবাদী: ${data.defendant}</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="selectCase('${doc.id}')" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs">নথি খুলুন</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    printRows += `
+                        <tr>
+                            <td class="border border-slate-400 p-2 text-center">${count}</td>
+                            <td class="border border-slate-400 p-2 font-bold text-center">${data.caseNo}</td>
+                            <td class="border border-slate-400 p-2">${data.subject}</td>
+                            <td class="border border-slate-400 p-2">বাদী: ${data.plaintiff}<br>বিবাদী: ${data.defendant}</td>
+                            <td class="border border-slate-400 p-2 text-center">${data.status === 'resolved' ? 'নিষ্পত্তি' : 'শুনানির জন্য ধার্য'}</td>
+                        </tr>
+                    `;
+
+                    count++;
+                });
+
+                document.getElementById('print-causelist-date-title').innerText = `তারিখ: ${selectedDate}`;
+                printTbody.innerHTML = printRows;
+
+            } catch(err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">ডাটা আনতে সমস্যা হয়েছে।</td></tr>';
+            }
+        }
+
+        function printCauseList() {
+            document.getElementById('printable-area').classList.add('hidden');
+            document.getElementById('printable-cause-list').classList.remove('hidden');
+            window.print();
+        }
+
+        async function createCase(e) {
+            e.preventDefault();
+            const caseNo = document.getElementById('case-no').value;
+            const location = document.getElementById('case-location').value;
+            const plaintiff = document.getElementById('plaintiff').value;
+            const defendant = document.getElementById('defendant').value;
+            const subject = document.getElementById('case-subject').value;
+            const initialNote = document.getElementById('initial-note').value;
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const caseRef = await db.collection('cases').add({
+                    caseNo, location, plaintiff, defendant, subject,
+                    status: 'judge_review',
+                    nextDate: today,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await db.collection('cases').doc(caseRef.id).collection('orders').add({
+                    type: 'peshkar_note',
+                    orderDate: today,
+                    orderText: initialNote,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                e.target.reset();
+                alert("মামলা রুজু হয়েছে এবং বিচারকের নিকট প্রেরণ করা হয়েছে।");
+                loadCases();
+                fetchCauseList();
+            } catch (err) {
+                alert("ডাটা সেভ করতে সমস্যা হয়েছে: " + err.message);
+            }
+        }
+
+        async function submitPeshkarNote(e) {
+            e.preventDefault();
+            const caseId = document.getElementById('peshkar-selected-case-id').value;
+            const noteText = document.getElementById('peshkar-hearing-note').value;
+            const today = new Date().toISOString().split('T')[0];
+
+            try {
+                await db.collection('cases').doc(caseId).collection('orders').add({
+                    type: 'peshkar_note',
+                    orderDate: today,
+                    orderText: noteText,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await db.collection('cases').doc(caseId).update({
+                    status: 'judge_review'
+                });
+
+                document.getElementById('peshkar-hearing-note').value = '';
+                alert("আজকের শুনানীর নথি পেশ করে বিচারকের নিকট প্রেরণ করা হয়েছে।");
+                loadOrders(caseId);
+                loadCases();
+            } catch(err) {
+                alert("নোট সেভ করতে সমস্যা হয়েছে: " + err.message);
+            }
+        }
+
+        function loadCases() {
+            db.collection('cases').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                const tbody = document.getElementById('case-list-body');
+                tbody.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-slate-50";
+
+                    let statusBadge = '';
+                    if (data.status === 'resolved') {
+                        statusBadge = '<span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800 font-semibold">নিষ্পত্তি</span>';
+                    } else if (data.status === 'peshkar_pending') {
+                        statusBadge = `<span class="px-2 py-1 text-xs rounded bg-amber-100 text-amber-800 font-semibold">পেশকারের কাছে অপেক্ষমান ${data.nextDate ? `<br>(পুনঃশুনানি: ${data.nextDate})` : ''}</span>`;
+                    } else {
+                        statusBadge = '<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 font-semibold">বিচারকের কাছে প্রস্তুত</span>';
+                    }
+
+                    let deleteActionBtn = '';
+                    if (currentUser && currentUser.role === 'judge') {
+                        deleteActionBtn = `<button onclick="deleteCaseDirect('${doc.id}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1 font-semibold" title="মামলা ডিলিট করুন">ডিলিট</button>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold">${data.caseNo}</td>
+                        <td class="p-3">${data.subject}</td>
+                        <td class="p-3 text-xs">বাদী: ${data.plaintiff}<br>বিবাদী: ${data.defendant}</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="selectCase('${doc.id}')" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs">নথি খুলুন</button>
+                            ${deleteActionBtn}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        let currentSelectedCase = null;
+
+        async function selectCase(caseId) {
+            const doc = await db.collection('cases').doc(caseId).get();
+            if (!doc.exists) {
+                alert("মামলাটি পাওয়া যায়নি বা মুছে ফেলা হয়েছে।");
+                return;
+            }
+            currentSelectedCase = { id: doc.id, ...doc.data() };
+            
+            document.getElementById('case-history-section').classList.remove('hidden');
+
+            if (currentUser && currentUser.role === 'peshkar') {
+                document.getElementById('peshkar-submission-section').classList.remove('hidden');
+                document.getElementById('peshkar-selected-case-id').value = caseId;
+                document.getElementById('peshkar-active-case-title').innerText = `মামলা নং: ${currentSelectedCase.caseNo}`;
+
+                const noticeDiv = document.getElementById('next-hearing-notice');
+                if (currentSelectedCase.nextDate) {
+                    noticeDiv.innerText = `পরবর্তী তারিখ: ${currentSelectedCase.nextDate}`;
+                    noticeDiv.classList.remove('hidden');
+                } else {
+                    noticeDiv.classList.add('hidden');
+                }
+            }
+
+            if (currentUser && currentUser.role === 'judge') {
+                document.getElementById('judge-order-section').classList.remove('hidden');
+                document.getElementById('selected-case-id').value = caseId;
+                document.getElementById('active-case-title').innerText = `মামলা নং: ${currentSelectedCase.caseNo}`;
+            }
+
+            loadOrders(caseId);
+        }
+
+        async function loadOrders(caseId) {
+            const historyDiv = document.getElementById('order-history');
+            historyDiv.innerHTML = 'লোড হচ্ছে...';
+
+            const snapshot = await db.collection('cases').doc(caseId).collection('orders').get();
+            
+            let rawList = [];
+            snapshot.forEach(doc => {
+                rawList.push({ id: doc.id, ...doc.data() });
+            });
+
+            rawList.sort((a, b) => {
+                const dateA = new Date(a.orderDate);
+                const dateB = new Date(b.orderDate);
+                if (dateA - dateB !== 0) return dateA - dateB;
+                return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+            });
+
+            if (currentUser && currentUser.role === 'judge') {
+                const lastEntry = rawList.length > 0 ? rawList[rawList.length - 1] : null;
+                const isPeshkarSubmitted = lastEntry && lastEntry.type === 'peshkar_note';
+
+                const orderDateInput = document.getElementById('order-date');
+                const nextDateInput = document.getElementById('next-date');
+                const orderTextInput = document.getElementById('order-text');
+                const finalVerdictCheckbox = document.getElementById('is-final-verdict');
+                const submitBtn = document.getElementById('judge-submit-btn');
+                const warningMsg = document.getElementById('judge-warning-msg');
+
+                if (isPeshkarSubmitted && currentSelectedCase.status !== 'resolved') {
+                    orderDateInput.disabled = false;
+                    nextDateInput.disabled = false;
+                    orderTextInput.disabled = false;
+                    finalVerdictCheckbox.disabled = false;
+                    submitBtn.disabled = false;
+                    warningMsg.classList.add('hidden');
+                    orderDateInput.value = lastEntry.orderDate || new Date().toISOString().split('T')[0];
+                } else {
+                    orderDateInput.disabled = true;
+                    nextDateInput.disabled = true;
+                    orderTextInput.disabled = true;
+                    finalVerdictCheckbox.disabled = true;
+                    submitBtn.disabled = true;
+                    warningMsg.classList.remove('hidden');
+                }
+            }
+
+            const sessions = [];
+            rawList.forEach(item => {
+                if (item.type === 'peshkar_note') {
+                    sessions.push({ peshkarNotes: [{id: item.id, text: item.orderText}], judgeOrders: [], date: item.orderDate });
+                } else {
+                    if (sessions.length === 0) {
+                        sessions.push({ peshkarNotes: [], judgeOrders: [], date: item.orderDate });
+                    }
+                    const currentSession = sessions[sessions.length - 1];
+                    currentSession.judgeOrders.push(item);
+                    if (item.orderDate) {
+                        currentSession.date = item.orderDate;
+                    }
+                }
+            });
+
+            historyDiv.innerHTML = '';
+            let printOrdersHTML = '';
+            let serialNo = 1;
+
+            for (const session of sessions) {
+                const date = session.date || 'অন্যান্য';
+                const group = session;
+                const peshkarText = group.peshkarNotes.map(n => n.text).join("\n");
+                
+                let judgeText = "";
+                let nextDateInfo = "";
+
+                if (group.judgeOrders.length > 0) {
+                    judgeText = group.judgeOrders.map(j => j.orderText).join("\n");
+                    const lastOrder = group.judgeOrders[group.judgeOrders.length - 1];
+                    if (lastOrder.nextDate) {
+                        nextDateInfo = lastOrder.nextDate;
+                    }
+                }
+
+                let deleteOrderBtn = '';
+                if (currentUser && currentUser.role === 'judge') {
+                    // সেশনের বিচারক বা পেশকারের এন্ট্রি ডিলিটের বাটন
+                    const allItemIds = [...group.peshkarNotes.map(p => p.id), ...group.judgeOrders.map(j => j.id)];
+                    deleteOrderBtn = `<button onclick="deleteOrderSession('${caseId}', [${allItemIds.map(id => `'${id}'`).join(',')}])" class="text-red-600 hover:text-red-800 text-xs font-semibold ml-auto border border-red-300 px-2 py-0.5 rounded">আদেশ ডিলিট</button>`;
+                }
+
+                historyDiv.innerHTML += `
+                    <div class="border-b pb-2 bg-white p-2 rounded">
+                        <div class="flex justify-between items-center mb-1">
+                            <p class="font-bold text-slate-800">
+                                আদেশ নং: ${serialNo} | তারিখ: ${date}
+                            </p>
+                            ${deleteOrderBtn}
+                        </div>
+                        ${peshkarText ? `<p class="text-slate-600 mb-2">${peshkarText}</p>` : ''}
+                        ${judgeText ? `<p class="text-slate-800 font-medium mb-1">${judgeText}</p>` : ''}
+                        ${nextDateInfo ? `<p class="text-emerald-700 font-semibold mt-1">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
+                    </div>
+                `;
+
+                printOrdersHTML += `
+                    <tr>
+                        <td class="border border-slate-400 p-2 text-center align-top">
+                            <strong>আদেশ নং:</strong> ${serialNo}<br>
+                            <strong>তারিখ:</strong> ${date}
+                        </td>
+                        <td class="border border-slate-400 p-2 leading-relaxed align-top">
+                            ${peshkarText ? `<p class="whitespace-pre-line mb-3">${peshkarText}</p>` : ''}
+                            ${judgeText ? `<p class="whitespace-pre-line mb-2">${judgeText}</p>` : ''}
+                            ${nextDateInfo ? `<p class="mt-2 font-semibold text-slate-800">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
+                        </td>
+                        <td class="border border-slate-400 p-2 align-top"></td>
+                    </tr>
+                `;
+
+                serialNo++;
+            }
+
+            if (currentSelectedCase) {
+                document.getElementById('print-case-no').innerText = `বিবিধ মোকদ্দমা নং: ${currentSelectedCase.caseNo}`;
+                document.getElementById('print-plaintiff').innerText = currentSelectedCase.plaintiff;
+                document.getElementById('print-defendant').innerText = currentSelectedCase.defendant;
+                document.getElementById('print-subject').innerText = currentSelectedCase.subject;
+                document.getElementById('print-orders-body').innerHTML = printOrdersHTML;
+            }
+        }
+
+        async function submitOrder(e) {
+            e.preventDefault();
+            const caseId = document.getElementById('selected-case-id').value;
+            const orderDate = document.getElementById('order-date').value;
+            const nextDate = document.getElementById('next-date').value;
+            const orderText = document.getElementById('order-text').value;
+            const isFinal = document.getElementById('is-final-verdict').checked;
+
+            await db.collection('cases').doc(caseId).collection('orders').add({
+                type: 'judge_order',
+                orderDate, nextDate, orderText,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            if (isFinal) {
+                await db.collection('cases').doc(caseId).update({ 
+                    status: 'resolved',
+                    nextDate: null 
+                });
+            } else if (nextDate) {
+                await db.collection('cases').doc(caseId).update({ 
+                    status: 'peshkar_pending',
+                    nextDate: nextDate 
+                });
+            }
+
+            document.getElementById('order-text').value = '';
+            document.getElementById('next-date').value = '';
+            alert("আদেশ সংরক্ষণ হয়েছে এবং মামলাটি পরবর্তী কার্যক্রমের জন্য পেশকারের নিকট প্রেরিত হয়েছে।");
+            loadOrders(caseId);
+            loadCases();
+            fetchCauseList();
+        }
+
+        // --- বিচারকের ডিলিট ফাংশনালিটি ---
+
+        // ১. পুরো মামলা মুছে ফেলা (একটি নির্দিষ্ট মামলা)
+        async function deleteCurrentCase() {
+            if (!currentSelectedCase) return;
+            deleteCaseDirect(currentSelectedCase.id);
+        }
+
+        async function deleteCaseDirect(caseId) {
+            if (currentUser?.role !== 'judge') {
+                alert("শুধুমাত্র বিচারক মামলা ডিলিট করতে পারবেন।");
+                return;
+            }
+
+            if (confirm("আপনি কি নিশ্চিত যে আপনি এই সম্পূর্ণ মামলাটি মুছে ফেলতে চান? এই কাজটি আর ফেরানো যাবে না!")) {
+                try {
+                    // সাব-কালেকশন (orders) ডিলিট করা
+                    const ordersSnapshot = await db.collection('cases').doc(caseId).collection('orders').get();
+                    const batch = db.batch();
+                    ordersSnapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+
+                    // প্রধান কেস ডকুমেন্ট ডিলিট করা
+                    await db.collection('cases').doc(caseId).delete();
+
+                    alert("মামলাটি সফলভাবে মুছে ফেলা হয়েছে।");
+
+                    // UI হাইড ও রিফ্রেশ
+                    document.getElementById('case-history-section').classList.add('hidden');
+                    document.getElementById('judge-order-section').classList.add('hidden');
+                    document.getElementById('peshkar-submission-section').classList.add('hidden');
+                    currentSelectedCase = null;
+
+                    loadCases();
+                    fetchCauseList();
+                } catch (err) {
+                    alert("মামলা ডিলিট করতে সমস্যা হয়েছে: " + err.message);
+                }
+            }
+        }
+
+        // ২. নির্দিষ্ট আদেশের এন্ট্রি মুছে ফেলা
+        async function deleteOrderSession(caseId, orderIds) {
+            if (currentUser?.role !== 'judge') {
+                alert("শুধুমাত্র বিচারক আদেশ ডিলিট করতে পারবেন।");
+                return;
+            }
+
+            if (confirm("আপনি কি এই নির্দিষ্ট আদেশ এন্ট্রিটি ডিলিট করতে চান?")) {
+                try {
+                    const batch = db.batch();
+                    orderIds.forEach(id => {
+                        const ref = db.collection('cases').doc(caseId).collection('orders').doc(id);
+                        batch.delete(ref);
+                    });
+                    await batch.commit();
+
+                    alert("আদেশটি ডিলিট করা হয়েছে।");
+                    loadOrders(caseId);
+                } catch (err) {
+                    alert("আদেশ ডিলিট করতে সমস্যা হয়েছে: " + err.message);
+                }
+            }
+        }
+
+        function previewOrderSheet() {
+            document.getElementById('printable-cause-list').classList.add('hidden');
+            document.getElementById('printable-area').classList.remove('hidden');
+            window.print();
+        }
+    </script>
+</body>
+</html>
