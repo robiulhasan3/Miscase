@@ -36,7 +36,7 @@
         <!-- লগইন সেকশন -->
         <section id="auth-section" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-md mt-10">
             <h2 class="text-lg font-bold text-center mb-1 text-emerald-800">সিস্টেমে প্রবেশ করুন</h2>
-            <p class="text-xs text-slate-500 text-center mb-6">বাঞ্ছারামপুর ভূমি আদালত অটো-প্যানেল</p>
+            <p class="text-xs text-slate-500 text-center mb-6">বাঞ্ছারামপুর ভূমি আদালত প্যানেল</p>
 
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -49,18 +49,6 @@
                 </div>
                 <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2 rounded-lg font-semibold text-sm transition">লগইন করুন</button>
             </form>
-
-            <div class="mt-6 pt-4 border-t">
-                <p class="text-xs text-slate-500 mb-2 font-medium text-center">দ্রুত প্রবেশের জন্য নির্বাচন করুন:</p>
-                <div class="flex gap-2">
-                    <button type="button" onclick="autoLogin('peshkar')" class="w-1/2 bg-slate-100 hover:bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs py-2 rounded font-semibold transition">
-                        পেশকার আইডি (অটো)
-                    </button>
-                    <button type="button" onclick="autoLogin('judge')" class="w-1/2 bg-slate-100 hover:bg-blue-50 text-blue-800 border border-blue-200 text-xs py-2 rounded font-semibold transition">
-                        বিচারক / AC Land (অটো)
-                    </button>
-                </div>
-            </div>
 
             <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
         </section>
@@ -322,17 +310,6 @@
         document.getElementById('causelist-date').value = todayStr;
         document.getElementById('first-hearing-date').value = todayStr;
 
-        function autoLogin(role) {
-            if (role === 'peshkar') {
-                document.getElementById('login-email').value = 'peshkar@banchharampur.gov.bd';
-                document.getElementById('login-password').value = '123';
-            } else if (role === 'judge') {
-                document.getElementById('login-email').value = 'acland@banchharampur.gov.bd';
-                document.getElementById('login-password').value = '123';
-            }
-            document.getElementById('login-form').dispatchEvent(new Event('submit'));
-        }
-
         function handleLogin(e) {
             e.preventDefault();
             const emailInput = document.getElementById('login-email').value.trim();
@@ -370,7 +347,7 @@
         function logout() {
             currentUser = null;
             document.getElementById('login-form').reset();
-            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('auth-section').classList.remove('hidden');
             document.getElementById('app-dashboard').classList.add('hidden');
             document.getElementById('user-info').classList.add('hidden');
             document.getElementById('peshkar-submission-section').classList.add('hidden');
@@ -474,7 +451,7 @@
                 const caseRef = await db.collection('cases').add({
                     caseNo, location, plaintiff, defendant, subject,
                     status: 'judge_review',
-                    nextDate: firstHearingDate, // পেশকারের দেওয়া ১ম শুনানীর তারিখ
+                    nextDate: firstHearingDate,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
