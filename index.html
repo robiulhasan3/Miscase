@@ -123,9 +123,13 @@
                         <label class="block text-sm font-medium mb-1">বিবাদী/প্রতিপক্ষ</label>
                         <input type="text" id="defendant" placeholder="নাম ও ঠিকানা" required class="w-full border p-2 rounded text-sm">
                     </div>
-                    <div class="md:col-span-2">
+                    <div>
                         <label class="block text-sm font-medium mb-1">মামলার বিষয়বস্তু/সারসংক্ষেপ</label>
                         <input type="text" id="case-subject" placeholder="যেমন: নামজারি না-মঞ্জুরের বিরুদ্ধে আপিল" required class="w-full border p-2 rounded text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-emerald-800 font-semibold">১ম শুনানীর তারিখ</label>
+                        <input type="date" id="first-hearing-date" required class="w-full border border-emerald-500 p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium mb-1">কেস রুজুর সময় প্রাথমিক বিবরণ/তথ্য (পেশকার নোট)</label>
@@ -314,8 +318,9 @@
 
         let currentUser = null;
 
-        // ডিফল্ট তারিখ আজকের সিলেক্ট করা
-        document.getElementById('causelist-date').value = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('causelist-date').value = todayStr;
+        document.getElementById('first-hearing-date').value = todayStr;
 
         function autoLogin(role) {
             if (role === 'peshkar') {
@@ -454,6 +459,7 @@
             window.print();
         }
 
+        // পেশকার কর্তৃক ১ম শুনানীর তারিখ সহ নতুন কেস রুজু
         async function createCase(e) {
             e.preventDefault();
             const caseNo = document.getElementById('case-no').value;
@@ -461,25 +467,26 @@
             const plaintiff = document.getElementById('plaintiff').value;
             const defendant = document.getElementById('defendant').value;
             const subject = document.getElementById('case-subject').value;
+            const firstHearingDate = document.getElementById('first-hearing-date').value;
             const initialNote = document.getElementById('initial-note').value;
 
             try {
-                const today = new Date().toISOString().split('T')[0];
                 const caseRef = await db.collection('cases').add({
                     caseNo, location, plaintiff, defendant, subject,
                     status: 'judge_review',
-                    nextDate: today,
+                    nextDate: firstHearingDate, // পেশকারের দেওয়া ১ম শুনানীর তারিখ
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 await db.collection('cases').doc(caseRef.id).collection('orders').add({
                     type: 'peshkar_note',
-                    orderDate: today,
+                    orderDate: firstHearingDate,
                     orderText: initialNote,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 e.target.reset();
+                document.getElementById('first-hearing-date').value = new Date().toISOString().split('T')[0];
                 alert("মামলা রুজু হয়েছে এবং বিচারকের নিকট প্রেরণ করা হয়েছে।");
                 loadCases();
                 fetchCauseList();
@@ -530,7 +537,7 @@
                     } else if (data.status === 'peshkar_pending') {
                         statusBadge = `<span class="px-2 py-1 text-xs rounded bg-amber-100 text-amber-800 font-semibold">পেশকারের কাছে অপেক্ষমান ${data.nextDate ? `<br>(পুনঃশুনানি: ${data.nextDate})` : ''}</span>`;
                     } else {
-                        statusBadge = '<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 font-semibold">বিচারকের কাছে প্রস্তুত</span>';
+                        statusBadge = `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 font-semibold">বিচারকের কাছে প্রস্তুত ${data.nextDate ? `<br>(শুনানি: ${data.nextDate})` : ''}</span>`;
                     }
 
                     let deleteActionBtn = '';
@@ -673,7 +680,6 @@
 
                 let deleteOrderBtn = '';
                 if (currentUser && currentUser.role === 'judge') {
-                    // সেশনের বিচারক বা পেশকারের এন্ট্রি ডিলিটের বাটন
                     const allItemIds = [...group.peshkarNotes.map(p => p.id), ...group.judgeOrders.map(j => j.id)];
                     deleteOrderBtn = `<button onclick="deleteOrderSession('${caseId}', [${allItemIds.map(id => `'${id}'`).join(',')}])" class="text-red-600 hover:text-red-800 text-xs font-semibold ml-auto border border-red-300 px-2 py-0.5 rounded">আদেশ ডিলিট</button>`;
                 }
@@ -753,9 +759,6 @@
             fetchCauseList();
         }
 
-        // --- বিচারকের ডিলিট ফাংশনালিটি ---
-
-        // ১. পুরো মামলা মুছে ফেলা (একটি নির্দিষ্ট মামলা)
         async function deleteCurrentCase() {
             if (!currentSelectedCase) return;
             deleteCaseDirect(currentSelectedCase.id);
@@ -769,7 +772,6 @@
 
             if (confirm("আপনি কি নিশ্চিত যে আপনি এই সম্পূর্ণ মামলাটি মুছে ফেলতে চান? এই কাজটি আর ফেরানো যাবে না!")) {
                 try {
-                    // সাব-কালেকশন (orders) ডিলিট করা
                     const ordersSnapshot = await db.collection('cases').doc(caseId).collection('orders').get();
                     const batch = db.batch();
                     ordersSnapshot.forEach(doc => {
@@ -777,12 +779,10 @@
                     });
                     await batch.commit();
 
-                    // প্রধান কেস ডকুমেন্ট ডিলিট করা
                     await db.collection('cases').doc(caseId).delete();
 
                     alert("মামলাটি সফলভাবে মুছে ফেলা হয়েছে।");
 
-                    // UI হাইড ও রিফ্রেশ
                     document.getElementById('case-history-section').classList.add('hidden');
                     document.getElementById('judge-order-section').classList.add('hidden');
                     document.getElementById('peshkar-submission-section').classList.add('hidden');
@@ -796,7 +796,6 @@
             }
         }
 
-        // ২. নির্দিষ্ট আদেশের এন্ট্রি মুছে ফেলা
         async function deleteOrderSession(caseId, orderIds) {
             if (currentUser?.role !== 'judge') {
                 alert("শুধুমাত্র বিচারক আদেশ ডিলিট করতে পারবেন।");
