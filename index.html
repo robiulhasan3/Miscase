@@ -428,9 +428,10 @@
         </div>
     </main>
 
-    <!-- Firebase JS -->
+    <!-- Firebase SDK (App, Firestore, and Auth) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <script>
         // --- ফায়ারবেস কনফিগারেশন ---
@@ -446,14 +447,10 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
-        // --- Local Users ---
-        const localUsers = [
-            { email: "peshkar@banchharampur.gov.bd", password: "123", role: "peshkar", name: "পেশকার" },
-            { email: "acland@banchharampur.gov.bd", password: "123", role: "judge", name: "সহকারী কমিশনার (ভূমি)" }
-        ];
+        const auth = firebase.auth();
 
         let currentUser = null;
+        let currentSelectedCase = null;
 
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('causelist-date').value = todayStr;
@@ -478,6 +475,108 @@
             const day = toBanglaNum(parts[2]);
 
             return `${day}/${month}/${year} খ্রি.`;
+        }
+
+        // --- ফায়ারবেস অথেন্টিকেশন সেশন ও ভূমিকা যাচাই (Auth State Observer) ---
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    // ১. ফায়ারস্টোরের 'users' কালেকশন থেকে রোল আনা
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    let role = 'peshkar';
+                    let name = 'পেশকার';
+
+                    if (userDoc.exists) {
+                        role = userDoc.data().role || 'peshkar';
+                        name = userDoc.data().name || (role === 'judge' ? 'সহকারী কমিশনার (ভূমি)' : 'পেশকার');
+                    } else {
+                        // ২. ইমেইল ভিত্তিক স্বয়ংক্রিয় ভূমিকা নির্ধারণ (Fallback)
+                        if (user.email && user.email.includes('acland')) {
+                            role = 'judge';
+                            name = 'সহকারী কমিশনার (ভূমি)';
+                        }
+                    }
+
+                    currentUser = { uid: user.uid, email: user.email, role, name };
+
+                    // UI প্রদর্শন
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('app-dashboard').classList.remove('hidden');
+                    document.getElementById('user-info').classList.remove('hidden');
+                    document.getElementById('user-role-badge').innerText = `পদবী: ${currentUser.name}`;
+
+                    if (currentUser.role === 'peshkar') {
+                        document.getElementById('peshkar-view').classList.remove('hidden');
+                    } else {
+                        document.getElementById('peshkar-view').classList.add('hidden');
+                        document.getElementById('peshkar-submission-section').classList.add('hidden');
+                    }
+
+                    loadCases();
+                    fetchCauseList();
+
+                } catch (err) {
+                    console.error("প্রোফাইল লোড ত্রুটি:", err);
+                    alert("ইউজার সেশন লোড করতে সমস্যা হয়েছে।");
+                }
+            } else {
+                currentUser = null;
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('app-dashboard').classList.add('hidden');
+                document.getElementById('user-info').classList.add('hidden');
+                document.getElementById('peshkar-submission-section').classList.add('hidden');
+                document.getElementById('case-history-section').classList.add('hidden');
+                document.getElementById('judge-order-section').classList.add('hidden');
+            }
+        });
+
+        // --- ফায়ারবেস সাইন-ইন / লগইন হ্যান্ডলার ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('login-email').value.trim();
+            const passwordInput = document.getElementById('login-password').value.trim();
+            const errorDiv = document.getElementById('auth-error');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            errorDiv.classList.add('hidden');
+            submitBtn.innerText = "লগইন হচ্ছে...";
+            submitBtn.disabled = true;
+
+            try {
+                await auth.signInWithEmailAndPassword(emailInput, passwordInput);
+            } catch (error) {
+                let errorMsg = "লগইন ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।";
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        errorMsg = "ইমেইল অথবা পাসওয়ার্ড ভুল দিয়েছেন!";
+                        break;
+                    case 'auth/invalid-email':
+                        errorMsg = "সঠিক ফরম্যাটের ইমেইল প্রদান করুন।";
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMsg = "অনেকবার ভুল চেষ্টা করা হয়েছে। কিছুক্ষণ পর চেষ্টা করুন।";
+                        break;
+                }
+
+                errorDiv.innerText = errorMsg;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.innerText = "লগইন করুন";
+                submitBtn.disabled = false;
+            }
+        }
+
+        // --- লগআউট হ্যান্ডলার ---
+        async function logout() {
+            try {
+                await auth.signOut();
+                document.getElementById('login-form').reset();
+            } catch (err) {
+                alert("লগআউট করতে সমস্যা হয়েছে: " + err.message);
+            }
         }
 
         // --- পাবলিক কেস ট্র্যাকিং ফাংশন (নাগরিক সার্ভিস) ---
@@ -568,52 +667,7 @@
             });
         }
 
-        function handleLogin(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('login-email').value.trim();
-            const passwordInput = document.getElementById('login-password').value.trim();
-            const errorDiv = document.getElementById('auth-error');
-
-            const matchedUser = localUsers.find(
-                u => u.email.toLowerCase() === emailInput.toLowerCase() && u.password === passwordInput
-            );
-
-            if (matchedUser) {
-                currentUser = matchedUser;
-                errorDiv.classList.add('hidden');
-                
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('app-dashboard').classList.remove('hidden');
-                document.getElementById('user-info').classList.remove('hidden');
-                document.getElementById('user-role-badge').innerText = `পদবী: ${currentUser.name}`;
-
-                if (currentUser.role === 'peshkar') {
-                    document.getElementById('peshkar-view').classList.remove('hidden');
-                } else {
-                    document.getElementById('peshkar-view').classList.add('hidden');
-                    document.getElementById('peshkar-submission-section').classList.add('hidden');
-                }
-
-                loadCases();
-                fetchCauseList();
-            } else {
-                errorDiv.innerText = "ভুল ইমেইল বা পাসওয়ার্ড দিয়েছেন!";
-                errorDiv.classList.remove('hidden');
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            document.getElementById('login-form').reset();
-            document.getElementById('auth-section').classList.remove('hidden');
-            document.getElementById('app-dashboard').classList.add('hidden');
-            document.getElementById('user-info').classList.add('hidden');
-            document.getElementById('peshkar-submission-section').classList.add('hidden');
-            document.getElementById('case-history-section').classList.add('hidden');
-            document.getElementById('judge-order-section').classList.add('hidden');
-        }
-
-        // --- আপডেট করা কজ লিস্ট লোডিং ফাংশন (Error Handling সহ) ---
+        // --- কজ লিস্ট লোডিং ফাংশন ---
         async function fetchCauseList() {
             const selectedDate = document.getElementById('causelist-date').value;
             const tbody = document.getElementById('cause-list-table-body');
@@ -697,6 +751,7 @@
             window.print();
         }
 
+        // --- নতুন মামলা তৈরি ---
         async function createCase(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('create-case-btn');
@@ -745,6 +800,7 @@
             }
         }
 
+        // --- পেশকার নোট/নথি সাবমিশন ---
         async function submitPeshkarNote(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('peshkar-submit-btn');
@@ -784,7 +840,7 @@
             }
         }
 
-        // --- আপডেট করা সকল কেস লোডিং ফাংশন (Error Callback সহ) ---
+        // --- সকল চলমান কেস লোডিং ফাংশন ---
         function loadCases() {
             const tbody = document.getElementById('case-list-body');
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
@@ -835,8 +891,7 @@
             });
         }
 
-        let currentSelectedCase = null;
-
+        // --- নির্দিষ্ট মামলা নির্বাচন ---
         async function selectCase(caseId) {
             const doc = await db.collection('cases').doc(caseId).get();
             if (!doc.exists) {
@@ -871,6 +926,7 @@
             loadOrders(caseId);
         }
 
+        // --- নথির ইতিহাস ও আদেশনামা লোডিং ---
         async function loadOrders(caseId) {
             const historyDiv = document.getElementById('order-history');
             historyDiv.innerHTML = 'লোড হচ্ছে...';
@@ -1032,6 +1088,7 @@
             }
         }
 
+        // --- বিচারক আদেশ প্রদান ---
         async function submitOrder(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('judge-submit-btn');
@@ -1150,7 +1207,6 @@
             window.print();
         }
 
-        // --- নোটিশ প্রিন্ট করার ফাংশন (বাংলা ডিজিটে অটো তথ্য সহ) ---
         function previewNoticeSheet() {
             if (!currentSelectedCase) {
                 alert("অনুগ্রহ করে প্রথমে কোনো মামলা নির্বাচন করুন।");
