@@ -38,7 +38,7 @@ function formatBanglaDate(dateString) {
     return `${toBanglaNum(parts[2])}/${toBanglaNum(parts[1])}/${toBanglaNum(parts[0])} খ্রি.`;
 }
 
-// Securely Upload Files to Firebase Storage instead of Base64[cite: 1]
+// Securely Upload Files to Firebase Storage
 async function uploadFileToStorage(file, caseNo) {
     if (!file) return null;
     const sanitizedCaseNo = caseNo.replace(/\//g, '-');
@@ -252,7 +252,7 @@ async function selectCase(caseId) {
         document.getElementById('peshkar-selected-case-id').value = caseId;
         document.getElementById('peshkar-active-case-title').innerText = toBanglaNum(currentSelectedCase.caseNo);
         
-        // Lock UI if case is finalized[cite: 1]
+        // Lock UI if case is finalized
         document.getElementById('peshkar-submission-form').classList.toggle('hidden', isResolved);
         document.getElementById('peshkar-locked-msg').classList.toggle('hidden', !isResolved);
     }
@@ -262,7 +262,7 @@ async function selectCase(caseId) {
         document.getElementById('selected-case-id').value = caseId;
         document.getElementById('active-case-title').innerText = toBanglaNum(currentSelectedCase.caseNo);
         
-        // Lock UI if case is finalized[cite: 1]
+        // Lock UI if case is finalized
         document.getElementById('judge-form').classList.toggle('hidden', isResolved);
         document.getElementById('judge-locked-msg').classList.toggle('hidden', !isResolved);
     }
@@ -294,7 +294,7 @@ async function loadOrders(caseId) {
             </div>
         `;
 
-        // Print Format Render[cite: 1]
+        // Print Format Render
         printOrdersBody.innerHTML += `
             <tr>
                 <td class="border border-slate-400 p-2 align-top text-center font-bold">${toBanglaNum(index+1)}<br><span class="font-normal text-xs">${dateStr}</span></td>
