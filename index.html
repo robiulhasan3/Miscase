@@ -6,18 +6,42 @@
     <title>বিবিধ মোকদ্দমা ব্যবস্থাপনা - সহকারী কমিশনার (ভূমি)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QRCode.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        /* NikoshBan Font Import for Print Only */
+        @import url('https://fonts.cdnfonts.com/css/nikosh');
+        
+        @font-face {
+            font-family: 'NikoshBan';
+            src: url('https://raw.githubusercontent.com/mhozaifa/nikosh-font/master/NikoshBan.ttf') format('truetype'),
+                 url('https://cdn.jsdelivr.net/gh/mhozaifa/nikosh-font/NikoshBan.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* প্রিন্ট করার সময় NikoshBan ফন্ট এবং ১ সাইজ বড় টেক্সট ব্যবহার হবে */
         @media print {
-            body * { visibility: hidden; }
+            body * { 
+                visibility: hidden; 
+            }
             #printable-area, #printable-area *, 
             #printable-cause-list, #printable-cause-list *,
-            #printable-notice, #printable-notice * { visibility: visible; }
+            #printable-notice, #printable-notice * { 
+                visibility: visible; 
+                font-family: 'NikoshBan', 'Nikosh', sans-serif !important;
+            }
             
             #printable-area, #printable-cause-list, #printable-notice { 
                 position: absolute; left: 0; top: 0; width: 100%; 
             }
+
+            /* প্রিন্টে ফন্ট সাইজ ১ ধাপ বড় করার নিয়ম */
+            .text-xs { font-size: 0.875rem !important; line-height: 1.25rem !important; }  /* xs -> sm */
+            .text-sm { font-size: 1rem !important; line-height: 1.5rem !important; }      /* sm -> base */
+            .text-base { font-size: 1.125rem !important; line-height: 1.75rem !important; }/* base -> lg */
+            .text-lg { font-size: 1.25rem !important; line-height: 1.75rem !important; }  /* lg -> xl */
+            .text-xl { font-size: 1.5rem !important; line-height: 2rem !important; }      /* xl -> 2xl */
+            .text-2xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }/* 2xl -> 3xl */
+
             .no-print { display: none !important; }
         }
     </style>
@@ -46,7 +70,7 @@
             <p class="text-xs text-slate-500 text-center mb-4">আপনার মামলার বর্তমান অবস্থা ও পরবর্তী শুনানির তারিখ জানতে মামলা নম্বর লিখুন</p>
             
             <div class="flex gap-2 mb-4">
-                <input type="text" id="public-search-no" placeholder="যেমন: ১২/২০২৬" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                <input type="text" id="public-search-no" placeholder="যেমন: ১২/২০২০" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                 <button onclick="trackPublicCase()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 rounded-lg font-semibold text-sm transition shrink-0">খুঁজুন</button>
             </div>
 
@@ -285,23 +309,16 @@
                 </form>
             </section>
 
-            <!-- আদেশনামা প্রিন্ট ফরম্যাট (বাংলাদেশ ফরম নং- ২৭০ + QR Code) -->
-            <section id="printable-area" class="hidden bg-white p-8 border my-4 font-serif relative">
+            <!-- আদেশনামা প্রিন্ট ফরম্যাট (বাংলাদেশ ফরম নং- ২৭০) -->
+            <section id="printable-area" class="hidden bg-white p-8 border my-4 relative">
                 
-                <!-- QR Code অবস্থান (ডান পাশে উপরে) -->
-                <div class="absolute top-8 right-8 text-center border p-1 bg-white shadow-sm">
-                    <div id="qrcode-container" class="w-20 h-20"></div>
-                    <p class="text-[9px] font-sans text-slate-500 mt-1">স্ক্যান করে রেকর্ড দেখুন</p>
-                </div>
-
-                <div class="mb-4 border-b pb-4 pr-24">
-                    <p class="text-xs font-bold text-left mb-1">বাংলাদেশ ফরম নং- ২৭০</p>
-                    <div class="text-center space-y-1">
-                        <h2 class="text-2xl font-bold tracking-wide">আদেশপত্র</h2>
-                        <p class="text-xs font-medium italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
-                        <p class="text-sm font-bold pt-1">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
-                        <p class="text-xs pt-1" id="print-case-year-range"></p>
-                    </div>
+                <!-- হেডার লাইন গ্যাপ কমানো হয়েছে (leading-tight ও space-y-0.5) -->
+                <div class="mb-4 border-b pb-3 text-center leading-tight space-y-0.5">
+                    <p class="text-xs text-left mb-1">বাংলাদেশ ফরম নং- ২৭০</p>
+                    <p class="text-xs font-bold">আদেশপত্র</p>
+                    <p class="text-xs italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
+                    <p class="text-xs">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                    <p class="text-xs" id="print-case-year-range"></p>
                 </div>
                 
                 <div class="grid grid-cols-2 text-xs mb-4 border p-2 leading-relaxed">
@@ -314,9 +331,9 @@
                 <table class="w-full border-collapse border border-slate-400 text-xs">
                     <thead>
                         <tr class="bg-slate-100 border-b border-slate-400">
-                            <th class="border border-slate-400 p-2 w-1/4 text-center">আদেশের ক্রমিক নং ও তারিখ</th>
-                            <th class="border border-slate-400 p-2 w-1/2 text-center">আদেশ ও অফিসারের স্বাক্ষর</th>
-                            <th class="border border-slate-400 p-2 w-1/4 text-center">আদেশের উপর গৃহীত ব্যবস্থা</th>
+                            <th class="border border-slate-400 p-2 w-1/5 text-center">আদেশের ক্রমিক নং ও তারিখ</th>
+                            <th class="border border-slate-400 p-2 w-3/5 text-center">আদেশ ও অফিসারের স্বাক্ষর</th>
+                            <th class="border border-slate-400 p-2 w-1/5 text-center">আদেশের উপর গৃহীত ব্যবস্থা</th>
                         </tr>
                     </thead>
                     <tbody id="print-orders-body">
@@ -325,9 +342,11 @@
                 </table>
             </section>
 
-            <!-- ৪. শুনানীর নোটিশ প্রিন্ট ফরম্যাট (কোনো আউটার বর্ডার নেই, ফন্ট সাইজ সমান, নোটিশ উপরে ও মোকদ্দমা নং বামে) -->
-            <section id="printable-notice" class="hidden bg-white p-10 font-serif space-y-6 max-w-3xl mx-auto text-sm leading-relaxed text-black">
-                <div class="text-center space-y-1">
+            <!-- ৪. শুনানীর নোটিশ প্রিন্ট ফরম্যাট -->
+            <section id="printable-notice" class="hidden bg-white p-10 space-y-6 max-w-3xl mx-auto text-sm leading-relaxed text-black">
+                
+                <!-- নোটিশের হেডার লাইন গ্যাপ কমানো হয়েছে (leading-tight ও space-y-0.5) -->
+                <div class="text-center leading-tight space-y-0.5">
                     <h2 class="text-sm font-normal">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h2>
                     <h3 class="text-sm font-normal">উপজেলা ভূমি অফিস</h3>
                     <p class="text-sm font-normal">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া।</p>
@@ -344,7 +363,7 @@
                 </div>
 
                 <!-- নোটিশ উপরে এবং বিবিধ মোকদ্দমা নং নিচে বামে -->
-                <div class="space-y-2 pt-2">
+                <div class="space-y-1 pt-1">
                     <div class="text-center">
                         <h3 class="text-sm font-bold tracking-widest underline uppercase inline-block">"নোটিশ"</h3>
                     </div>
@@ -353,33 +372,36 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-6 text-sm pt-2 py-3">
-                    <div class="space-y-1">
+                <div class="grid grid-cols-2 gap-6 text-sm pt-2 py-2">
+                    <div class="space-y-0.5">
                         <p class="text-sm font-bold underline">বাদী:</p>
                         <p id="notice-plaintiff-details" class="text-sm whitespace-pre-line leading-relaxed"></p>
                         <p class="text-sm pt-1"><strong>মোবাইল:</strong> <span id="notice-plaintiff-mobile"></span></p>
                     </div>
-                    <div class="space-y-1">
+                    <div class="space-y-0.5">
                         <p class="text-sm font-bold underline">বিবাদী:</p>
                         <p id="notice-defendant-details" class="text-sm whitespace-pre-line leading-relaxed"></p>
                         <p class="text-sm pt-1"><strong>মোবাইল:</strong> <span id="notice-defendant-mobile"></span></p>
                     </div>
                 </div>
 
-                <div class="space-y-4 pt-2">
+                <div class="space-y-3 pt-1">
                     <p class="text-sm"><strong>বিষয়:</strong> <span id="notice-subject-text" class="text-sm font-normal"></span></p>
                     
-                    <p class="text-sm text-justify indent-8 leading-relaxed">
+                    <!-- ১ম অনুচ্ছেদ (০.৫ ইঞ্চি ইন্ডেন্ট সহ) -->
+                    <p class="text-sm text-justify leading-relaxed indent-[0.5in]">
                         এতদ্বারা আপনাকে/ আপনাদেরকে জানানো যাচ্ছে যে, <span id="notice-body-subject"></span> করার জন্য বাদী পক্ষ একখানা আবেদন দাখিল করেছেন। উক্ত আবেদনের পরিপ্রেক্ষিতে নিম্নস্বাক্ষরকারীর কার্যালয়ে আগামী <span id="notice-hearing-date" class="text-sm font-normal"></span> তারিখ সকাল ১০:০০ ঘটিকার সময় শুনানী অনুষ্ঠিত হবে।
                     </p>
-                    <p class="text-sm text-justify leading-relaxed">
-                        উক্ত শুনানীতে যথাসময় সংশ্লিষ্ট কাগজপত্রাদিসহ উপস্থিত থাকার জন্য আপনাকে/আপনাদেরকে অনুরোধ করা হল। অন্যথায় বিধি মোতাবেক ব্যবস্থা নেয়া হবে।
+                    
+                    <!-- ২য় অনুচ্ছেদ (০২। নম্বর যুক্ত ও ০.৫ ইঞ্চি ইন্ডেন্ট সহ) -->
+                    <p class="text-sm text-justify leading-relaxed indent-[0.5in]">
+                        ০২। উক্ত শুনানীতে যথাসময় সংশ্লিষ্ট কাগজপত্রাদিসহ উপস্থিত থাকার জন্য আপনাকে/আপনাদেরকে অনুরোধ করা হল। অন্যথায় বিধি মোতাবেক ব্যবস্থা নেয়া হবে।
                     </p>
                 </div>
 
-                <div class="pt-20 flex justify-end">
+                <!-- সহকারী কমিশনার (ভূমি) সিল সেকশন -->
+                <div class="pt-16 flex justify-end pr-12">
                     <div class="text-center leading-tight">
-                        <p class="text-sm font-normal">মোঃ রবিউল হাসান ভূঁইয়া</p>
                         <p class="text-sm font-normal">সহকারী কমিশনার (ভূমি)</p>
                         <p class="text-sm font-normal">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                     </div>
@@ -388,13 +410,13 @@
 
             <!-- কজ লিস্ট প্রিন্ট ফরম্যাট -->
             <section id="printable-cause-list" class="hidden bg-white p-8 border my-4">
-                <div class="text-center font-serif space-y-1 mb-6 border-b pb-4">
+                <div class="text-center leading-tight space-y-1 mb-6 border-b pb-4">
                     <h2 class="text-xl font-bold">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর</h2>
                     <h3 class="text-lg font-semibold">দৈনিক কার্যতালিকা (Cause List)</h3>
                     <p class="text-sm font-bold mt-1" id="print-causelist-date-title"></p>
                 </div>
 
-                <table class="w-full border-collapse border border-slate-400 text-xs font-serif">
+                <table class="w-full border-collapse border border-slate-400 text-xs">
                     <thead>
                         <tr class="bg-slate-100">
                             <th class="border border-slate-400 p-2 text-center">ক্রমিক</th>
@@ -920,6 +942,16 @@
             let firstDateStr = rawList.length > 0 ? formatBanglaDate(rawList[0].orderDate) : '';
             let lastDateStr = rawList.length > 0 ? formatBanglaDate(rawList[rawList.length - 1].orderDate) : '';
 
+            // নাম বাদে সহকারী কমিশনার (ভূমি) এর পদবীভিত্তিক স্বাক্ষর ব্লক
+            const aclandSignatureHTML = `
+                <div class="mt-6 text-right pt-4 flex justify-end">
+                    <div class="text-center leading-tight">
+                        <p class="font-bold text-slate-800">সহকারী কমিশনার (ভূমি)</p>
+                        <p class="text-xs text-slate-600">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                    </div>
+                </div>
+            `;
+
             for (const session of sessions) {
                 const date = formatBanglaDate(session.date);
                 const group = session;
@@ -973,10 +1005,11 @@
                             ${toBanglaNum(serialNo)}<br>
                             <span class="font-normal text-[11px]">${date}</span>
                         </td>
-                        <td class="border border-slate-400 p-2 leading-relaxed align-top">
+                        <td class="border border-slate-400 p-3 leading-relaxed align-top">
                             ${peshkarText ? `<p class="whitespace-pre-line mb-2 text-slate-700">${peshkarText}</p>` : ''}
                             ${judgeText ? `<p class="whitespace-pre-line mb-2 font-semibold text-slate-900">${judgeText}</p>` : ''}
                             ${nextDateInfo ? `<p class="mt-2 font-semibold text-slate-800">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
+                            ${judgeText ? aclandSignatureHTML : ''}
                         </td>
                         <td class="border border-slate-400 p-2 align-top text-center"></td>
                     </tr>
@@ -992,15 +1025,6 @@
                 document.getElementById('print-defendant').innerText = toBanglaNum(currentSelectedCase.defendant);
                 document.getElementById('print-subject').innerText = toBanglaNum(currentSelectedCase.subject);
                 document.getElementById('print-orders-body').innerHTML = printOrdersHTML;
-
-                // QR Code জেনারেট করা
-                const qrContainer = document.getElementById('qrcode-container');
-                qrContainer.innerHTML = '';
-                new QRCode(qrContainer, {
-                    text: `উপজেলা ভূমি অফিস বাঞ্ছারামপুর\nমামলা নং: ${toBanglaNum(currentSelectedCase.caseNo)}\nবিষয়: ${currentSelectedCase.subject}\nঅবস্থা: ${currentSelectedCase.status === 'resolved' ? 'নিষ্পত্তি' : 'চলমান'}`,
-                    width: 80,
-                    height: 80
-                });
             }
         }
 
@@ -1131,7 +1155,7 @@
 
             const today = new Date().toISOString().split('T')[0];
             
-            // প্রসেস নম্বর ফাঁকা ড্যাশ রাখা হলো যাতে প্রিন্টের পর কলম দিয়ে লেখা যায়
+            // প্রসেস নম্বর ফাঁকা রাখা হয়েছে যাতে প্রিন্টের পর কলম দিয়ে লেখা যায়
             document.getElementById('notice-process-no').innerText = '........................';
             document.getElementById('notice-issue-date').innerText = formatBanglaDate(today);
             document.getElementById('notice-case-no').innerText = toBanglaNum(currentSelectedCase.caseNo);
