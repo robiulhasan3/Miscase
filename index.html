@@ -7,7 +7,6 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Nikosh font fallback */
         @import url('https://fonts.cdnfonts.com/css/nikosh');
         
         @font-face {
@@ -17,7 +16,6 @@
             font-style: normal;
         }
 
-        /* প্রিন্ট করার সময় NikoshBan ফন্ট এবং নির্দিষ্ট এরিয়া প্রদর্শন */
         @media print {
             body * { 
                 visibility: hidden !important; 
@@ -65,12 +63,10 @@
             </div>
 
             <!-- ট্র্যাকিং রেজাল্ট প্রদর্শন -->
-            <div id="public-case-result" class="hidden bg-slate-50 border rounded-lg p-4 space-y-3 text-xs">
-                <!-- ডায়নামিক ট্র্যাকিং রেজাল্ট -->
-            </div>
+            <div id="public-case-result" class="hidden bg-slate-50 border rounded-lg p-4 space-y-3 text-xs"></div>
         </section>
 
-        <!-- ২. লগইন সেকশন (কর্মকর্তাদের জন্য) -->
+        <!-- ২. লগইন সেকশন -->
         <section id="auth-section" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-md mt-6 no-print">
             <h2 class="text-md font-bold text-center mb-1 text-emerald-800">অফিসিয়াল প্যানেলে প্রবেশ করুন</h2>
             <p class="text-xs text-slate-500 text-center mb-4">সহকারী কমিশনার (ভূমি) ও পেশকার আইডি</p>
@@ -87,7 +83,6 @@
                 <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2 rounded-lg font-semibold text-sm transition">লগইন করুন</button>
             </form>
 
-            <!-- দ্রুত ডেমো টেস্ট করার বিকল্প -->
             <div class="mt-4 pt-3 border-t text-center space-y-2">
                 <p class="text-xs text-slate-400">অথবা দ্রুত টেস্ট ডেমো মোডে প্রবেশ করুন:</p>
                 <div class="flex gap-2 justify-center">
@@ -101,6 +96,29 @@
 
         <!-- ৩. মূল ড্যাশবোর্ড -->
         <div id="app-dashboard" class="hidden space-y-6">
+
+            <!-- 🏛️ বিচারক এক্সক্লুসিভ সামারি ড্যাশবোর্ড -->
+            <section id="judge-dashboard-stats" class="hidden bg-white p-6 rounded-xl shadow-md no-print border-l-4 border-emerald-800">
+                <h2 class="text-lg font-bold text-emerald-800 mb-3">⚖️ বিচারক ওভারভিউ ড্যাশবোর্ড</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
+                        <p class="text-xs text-blue-600 font-bold uppercase">মোট মামলা</p>
+                        <p id="stat-total-cases" class="text-2xl font-black text-blue-800">০</p>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg text-center">
+                        <p class="text-xs text-amber-600 font-bold uppercase">বিচারকের অনুমোদনের অপেক্ষায়</p>
+                        <p id="stat-judge-pending" class="text-2xl font-black text-amber-800">০</p>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-lg text-center">
+                        <p class="text-xs text-indigo-600 font-bold uppercase">পেশকারের উপস্থাপনের অপেক্ষায়</p>
+                        <p id="stat-peshkar-pending" class="text-2xl font-black text-indigo-800">০</p>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-center">
+                        <p class="text-xs text-emerald-600 font-bold uppercase">নিষ্পত্তিকৃত মামলা</p>
+                        <p id="stat-resolved-cases" class="text-2xl font-black text-emerald-800">০</p>
+                    </div>
+                </div>
+            </section>
 
             <!-- কজ লিস্ট ফিল্টার সেকশন -->
             <section class="bg-white p-6 rounded-xl shadow-md no-print">
@@ -171,7 +189,6 @@
                         <input type="text" id="case-subject" placeholder="যেমন: নামজারী ও জমাখারিজ মোকদ্দমা নং- ৭৯৯/২১-২২ মূলে সৃজিত ২২৯৮ নং খতিয়ান আংশিক বাতিল" required class="w-full border p-2 rounded text-sm">
                     </div>
 
-                    <!-- ম্যানুয়াল ডেট ফিল্ডসমূহ -->
                     <div>
                         <label class="block text-sm font-medium mb-1 text-slate-700 font-semibold">কেস রুজুর তারিখ (ম্যানুয়াল সিলেক্ট)</label>
                         <input type="date" id="case-filing-date" required class="w-full border border-slate-300 p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
@@ -238,9 +255,7 @@
                                 <th class="p-3 text-right">কার্যক্রম</th>
                             </tr>
                         </thead>
-                        <tbody id="case-list-body">
-                            <!-- ডায়নামিক ডাটা -->
-                        </tbody>
+                        <tbody id="case-list-body"></tbody>
                     </table>
                 </div>
             </section>
@@ -249,9 +264,7 @@
             <section id="case-history-section" class="hidden bg-white p-6 rounded-xl shadow-md space-y-4 no-print">
                 <div class="bg-slate-50 p-4 rounded-lg">
                     <h3 class="text-sm font-bold text-slate-700 mb-2">নথির ইতিহাস ও আদেশনামা:</h3>
-                    <div id="order-history" class="space-y-3 text-xs text-slate-600 max-h-72 overflow-y-auto">
-                        <!-- আগের আদেশসমূহ -->
-                    </div>
+                    <div id="order-history" class="space-y-3 text-xs text-slate-600 max-h-96 overflow-y-auto"></div>
                 </div>
             </section>
 
@@ -268,7 +281,7 @@
                 </div>
 
                 <div id="judge-warning-msg" class="hidden bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-semibold">
-                    ⚠️ পেশকার নথি উপস্থাপন / নোট প্রদান না করা পর্যন্ত আপনি আদেশ লিখতেই পারবেন না।
+                    ⚠️ পেশকার নথি উপস্থাপন / নোট প্রদান না করা পর্যন্ত আপনি নতুন আদেশ লিখতেই পারবেন না।
                 </div>
 
                 <form id="judge-form" onsubmit="submitOrder(event)" class="space-y-3">
@@ -284,7 +297,7 @@
                         </div>
                     </div>
 
-                    <!-- দ্রুত আদেশ ড্রপডাউন (Preset Order Templates) -->
+                    <!-- দ্রুত আদেশ ড্রপডাউন -->
                     <div>
                         <label class="block text-sm font-medium mb-1 text-emerald-800">⚡ দ্রুত আদেশ নির্বাচন করুন (আদেশের টেমপ্লেট)</label>
                         <select id="order-template-select" onchange="applyOrderTemplate()" class="w-full border border-emerald-300 p-2 rounded text-sm bg-emerald-50 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed">
@@ -319,7 +332,6 @@
 
             <!-- আদেশনামা প্রিন্ট ফরম্যাট (বাংলাদেশ ফরম নং- ২৭০) -->
             <section id="printable-area" class="hidden bg-white p-8 border my-4 relative">
-                
                 <div class="mb-4 border-b pb-3 text-center leading-tight space-y-0.5">
                     <p class="text-xs text-left mb-1">বাংলাদেশ ফরম নং- ২৭০</p>
                     <p class="text-xs font-bold">আদেশপত্র</p>
@@ -343,15 +355,12 @@
                             <th class="border border-slate-400 p-2 w-1/5 text-center">আদেশের উপর গৃহীত ব্যবস্থা</th>
                         </tr>
                     </thead>
-                    <tbody id="print-orders-body">
-                        <!-- ডায়নামিক ডাটা -->
-                    </tbody>
+                    <tbody id="print-orders-body"></tbody>
                 </table>
             </section>
 
             <!-- ৪. শুনানীর নোটিশ প্রিন্ট ফরম্যাট -->
             <section id="printable-notice" class="hidden bg-white p-10 space-y-6 max-w-3xl mx-auto text-sm leading-relaxed text-black">
-                
                 <div class="text-center leading-tight space-y-0.5">
                     <h2 class="text-sm font-normal">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h2>
                     <h3 class="text-sm font-normal">উপজেলা ভূমি অফিস</h3>
@@ -428,14 +437,40 @@
                             <th class="border border-slate-400 p-2 text-center">বর্তমান অবস্থা</th>
                         </tr>
                     </thead>
-                    <tbody id="print-causelist-body">
-                        <!-- ডায়নামিক ডাটা -->
-                    </tbody>
+                    <tbody id="print-causelist-body"></tbody>
                 </table>
             </section>
 
         </div>
     </main>
+
+    <!-- ✏️ বিচারকের জন্য এডিট করার মডাল -->
+    <div id="edit-entry-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 id="edit-modal-title" class="text-base font-bold text-emerald-800">এন্ট্রি এডিট করুন (বিচারক)</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+            </div>
+            
+            <input type="hidden" id="edit-entry-id">
+            <input type="hidden" id="edit-case-id">
+
+            <div>
+                <label class="block text-xs font-semibold mb-1">তারিখ</label>
+                <input type="date" id="edit-entry-date" class="w-full border rounded p-2 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold mb-1">বিবরণ / টেক্সট</label>
+                <textarea id="edit-entry-text" rows="5" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t">
+                <button onclick="closeEditModal()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded text-xs font-semibold">বাতিল</button>
+                <button onclick="saveEntryEdit()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded text-xs font-semibold">আপডেট করুন</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -463,7 +498,7 @@
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('causelist-date').value = todayStr;
 
-        // --- সংখ্যা রূপান্তর হেল্পারস ---
+        // --- হেল্পারস ---
         function toBanglaNum(str) {
             if (str === null || str === undefined) return '';
             const banglaDigits = {'0':'০', '1':'১', '2':'২', '3':'৩', '4':'৪', '5':'৫', '6':'৬', '7':'৭', '8':'৮', '9':'৯'};
@@ -483,29 +518,20 @@
             return `${toBanglaNum(parts[2])}/${toBanglaNum(parts[1])}/${toBanglaNum(parts[0])} খ্রি.`;
         }
 
-        // --- ফাইল বেস৬৪ কনভার্টার উইথ সাইজ লিমিট (800KB) ---
         function convertFileToBase64(file) {
             return new Promise((resolve, reject) => {
-                if (!file) {
-                    resolve(null);
-                    return;
-                }
+                if (!file) { resolve(null); return; }
                 if (file.size > 800 * 1024) {
-                    reject(new Error("ফাইলটির সাইজ অত্যন্ত বড় (সর্বোচ্চ ৮০০ KB সাইজ অনুমতিপ্রাপ্ত)। অনুগ্রহ করে ছোট ছবি বা PDF ব্যবহার করুন।"));
+                    reject(new Error("ফাইলটির সাইজ অত্যন্ত বড় (সর্বোচ্চ ৮০০ KB সাইজ অনুমতিপ্রাপ্ত)।"));
                     return;
                 }
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve({
-                    name: file.name,
-                    type: file.type,
-                    data: reader.result
-                });
+                reader.onload = () => resolve({ name: file.name, type: file.type, data: reader.result });
                 reader.onerror = error => reject(error);
             });
         }
 
-        // --- ডেমো রোল লগইন ---
         function loginAsDemo(role) {
             currentUser = {
                 uid: 'demo-' + role,
@@ -522,18 +548,41 @@
             document.getElementById('user-info').classList.remove('hidden');
             document.getElementById('user-role-badge').innerText = `পদবী: ${currentUser.name}`;
 
-            if (currentUser.role === 'peshkar') {
-                document.getElementById('peshkar-view').classList.remove('hidden');
-            } else {
+            if (currentUser.role === 'judge') {
+                document.getElementById('judge-dashboard-stats').classList.remove('hidden');
                 document.getElementById('peshkar-view').classList.add('hidden');
                 document.getElementById('peshkar-submission-section').classList.add('hidden');
+                loadJudgeDashboardStats();
+            } else {
+                document.getElementById('judge-dashboard-stats').classList.add('hidden');
+                document.getElementById('peshkar-view').classList.remove('hidden');
             }
 
             loadCases();
             fetchCauseList();
         }
 
-        // --- ফায়ারবেস অথেন্টিকেশন সেশন পর্যবেক্ষণ ---
+        function loadJudgeDashboardStats() {
+            db.collection('cases').onSnapshot(snapshot => {
+                let total = snapshot.size;
+                let judgePending = 0;
+                let peshkarPending = 0;
+                let resolved = 0;
+
+                snapshot.forEach(doc => {
+                    let st = doc.data().status;
+                    if (st === 'judge_review') judgePending++;
+                    else if (st === 'peshkar_pending') peshkarPending++;
+                    else if (st === 'resolved') resolved++;
+                });
+
+                document.getElementById('stat-total-cases').innerText = toBanglaNum(total);
+                document.getElementById('stat-judge-pending').innerText = toBanglaNum(judgePending);
+                document.getElementById('stat-peshkar-pending').innerText = toBanglaNum(peshkarPending);
+                document.getElementById('stat-resolved-cases').innerText = toBanglaNum(resolved);
+            });
+        }
+
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 try {
@@ -558,13 +607,9 @@
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('app-dashboard').classList.add('hidden');
                 document.getElementById('user-info').classList.add('hidden');
-                document.getElementById('peshkar-submission-section').classList.add('hidden');
-                document.getElementById('case-history-section').classList.add('hidden');
-                document.getElementById('judge-order-section').classList.add('hidden');
             }
         });
 
-        // --- লগইন হ্যান্ডলার ---
         async function handleLogin(e) {
             e.preventDefault();
             const emailInput = document.getElementById('login-email').value.trim();
@@ -598,7 +643,6 @@
             }
         }
 
-        // --- পাবলিক কেস ট্র্যাকিং (বাংলা/ইংরেজি নিরপেক্ষ) ---
         async function trackPublicCase() {
             const rawSearchNo = document.getElementById('public-search-no').value.trim();
             const resultDiv = document.getElementById('public-case-result');
@@ -669,7 +713,6 @@
             }
         }
 
-        // --- কজ লিস্ট লোডিং ---
         async function fetchCauseList() {
             const selectedDate = document.getElementById('causelist-date').value;
             const tbody = document.getElementById('cause-list-table-body');
@@ -739,7 +782,6 @@
             }
         }
 
-        // --- নতুন কেস রুজু ---
         async function createCase(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('create-case-btn');
@@ -796,7 +838,6 @@
             }
         }
 
-        // --- পেশকার নোট সাবমিশন ---
         async function submitPeshkarNote(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('peshkar-submit-btn');
@@ -842,7 +883,6 @@
             }
         }
 
-        // --- সকল চলমান কেস লোডিং ---
         function loadCases() {
             const tbody = document.getElementById('case-list-body');
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
@@ -887,7 +927,6 @@
             });
         }
 
-        // --- নির্দিষ্ট মামলা নির্বাচন ---
         async function selectCase(caseId) {
             const doc = await db.collection('cases').doc(caseId).get();
             if (!doc.exists) {
@@ -922,7 +961,6 @@
             loadOrders(caseId);
         }
 
-        // --- আদেশের ইতিহাস লোড ---
         async function loadOrders(caseId) {
             const historyDiv = document.getElementById('order-history');
             historyDiv.innerHTML = 'লোড হচ্ছে...';
@@ -965,7 +1003,7 @@
             const sessions = [];
             rawList.forEach(item => {
                 if (item.type === 'peshkar_note') {
-                    sessions.push({ peshkarNotes: [{id: item.id, text: item.orderText, file: item.file}], judgeOrders: [], date: item.orderDate });
+                    sessions.push({ peshkarNotes: [{id: item.id, text: item.orderText, file: item.file, orderDate: item.orderDate}], judgeOrders: [], date: item.orderDate });
                 } else {
                     if (sessions.length === 0) {
                         sessions.push({ peshkarNotes: [], judgeOrders: [], date: item.orderDate });
@@ -986,29 +1024,43 @@
             const aclandSignatureHTML = `
                 <div class="mt-6 text-right pt-4 flex justify-end">
                     <div class="text-center leading-tight">
-                        <p class="font-bold text-slate-800">সহকারী কমিশনার (ভূমি)</p>
-                        <p class="text-xs text-slate-600">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                        <p class="font-normal text-slate-800">সহকারী কমিশনার (ভূমি)</p>
+                        <p class="text-xs text-slate-600 font-normal">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                     </div>
                 </div>
             `;
 
             for (const session of sessions) {
                 const date = formatBanglaDate(session.date);
-                let peshkarText = session.peshkarNotes.map(n => toBanglaNum(n.text)).join("\n");
+
+                let peshkarContentHTML = session.peshkarNotes.map(n => {
+                    let editBtn = (currentUser && currentUser.role === 'judge') 
+                        ? `<button onclick="openEditModal('${caseId}', '${n.id}', \`${escapeQuotes(n.text)}\`, '${n.orderDate}', 'পেশকার নোট')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট নোট</button>`
+                        : '';
+                    return `<p class="text-slate-600 mb-1">${toBanglaNum(n.text)} ${editBtn}</p>`;
+                }).join("");
+
+                let peshkarTextRaw = session.peshkarNotes.map(n => toBanglaNum(n.text)).join("\n");
+
                 let peshkarFilesHTML = session.peshkarNotes.filter(n => n.file).map(n => 
                     `<a href="${n.file.data}" target="_blank" class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-1 rounded my-1 text-xs font-semibold">📎 নথি/ফাইল (${n.file.name})</a>`
                 ).join(" ");
 
-                let judgeText = "";
-                let judgeFilesHTML = "";
+                let judgeContentHTML = session.judgeOrders.map(j => {
+                    let editBtn = (currentUser && currentUser.role === 'judge') 
+                        ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', 'বিচারকের আদেশ')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ</button>`
+                        : '';
+                    return `<p class="text-slate-800 font-medium mb-1">${toBanglaNum(j.orderText)} ${editBtn}</p>`;
+                }).join("");
+
+                let judgeTextRaw = session.judgeOrders.map(j => toBanglaNum(j.orderText)).join("\n");
+
+                let judgeFilesHTML = session.judgeOrders.filter(j => j.file).map(j => 
+                    `<a href="${j.file.data}" target="_blank" class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 border border-blue-300 px-2 py-1 rounded my-1 text-xs font-semibold">📎 আদেশের ফাইল (${j.file.name})</a>`
+                ).join(" ");
+
                 let nextDateInfo = "";
-
                 if (session.judgeOrders.length > 0) {
-                    judgeText = session.judgeOrders.map(j => toBanglaNum(j.orderText)).join("\n");
-                    judgeFilesHTML = session.judgeOrders.filter(j => j.file).map(j => 
-                        `<a href="${j.file.data}" target="_blank" class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 border border-blue-300 px-2 py-1 rounded my-1 text-xs font-semibold">📎 আদেশের ফাইল (${j.file.name})</a>`
-                    ).join(" ");
-
                     const lastOrder = session.judgeOrders[session.judgeOrders.length - 1];
                     if (lastOrder.nextDate) nextDateInfo = formatBanglaDate(lastOrder.nextDate);
                 }
@@ -1025,14 +1077,15 @@
                             <p class="font-bold text-slate-800">আদেশ নং: ${toBanglaNum(serialNo)} | তারিখ: ${date}</p>
                             ${deleteOrderBtn}
                         </div>
-                        ${peshkarText ? `<p class="text-slate-600 mb-1">${peshkarText}</p>` : ''}
+                        ${peshkarContentHTML}
                         ${peshkarFilesHTML ? `<div class="mb-2">${peshkarFilesHTML}</div>` : ''}
-                        ${judgeText ? `<p class="text-slate-800 font-medium mb-1">${judgeText}</p>` : ''}
+                        ${judgeContentHTML}
                         ${judgeFilesHTML ? `<div class="mb-2">${judgeFilesHTML}</div>` : ''}
                         ${nextDateInfo ? `<p class="text-emerald-700 font-semibold mt-1">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
                     </div>
                 `;
 
+                /* প্রিন্টের জন্য পরিবর্তন: font-normal এবং সাধারণ ফন্ট সাইজ ব্যবহার করা হয়েছে */
                 printOrdersHTML += `
                     <tr>
                         <td class="border border-slate-400 p-2 text-center align-top font-bold">
@@ -1040,10 +1093,10 @@
                             <span class="font-normal text-[11px]">${date}</span>
                         </td>
                         <td class="border border-slate-400 p-3 leading-relaxed align-top">
-                            ${peshkarText ? `<p class="whitespace-pre-line mb-2 text-slate-700">${peshkarText}</p>` : ''}
-                            ${judgeText ? `<p class="whitespace-pre-line mb-2 font-semibold text-slate-900">${judgeText}</p>` : ''}
-                            ${nextDateInfo ? `<p class="mt-2 font-semibold text-slate-800">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
-                            ${judgeText ? aclandSignatureHTML : ''}
+                            ${peshkarTextRaw ? `<p class="whitespace-pre-line mb-2 text-slate-700 font-normal">${peshkarTextRaw}</p>` : ''}
+                            ${judgeTextRaw ? `<p class="whitespace-pre-line mb-2 font-normal text-slate-900">${judgeTextRaw}</p>` : ''}
+                            ${nextDateInfo ? `<p class="mt-2 font-normal text-slate-800">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
+                            ${judgeTextRaw ? aclandSignatureHTML : ''}
                         </td>
                         <td class="border border-slate-400 p-2 align-top text-center"></td>
                     </tr>
@@ -1061,7 +1114,49 @@
             }
         }
 
-        // --- বিচারকের আদেশ জমা দান ---
+        function escapeQuotes(str) {
+            return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+        }
+
+        function openEditModal(caseId, entryId, text, date, typeLabel) {
+            document.getElementById('edit-case-id').value = caseId;
+            document.getElementById('edit-entry-id').value = entryId;
+            document.getElementById('edit-entry-text').value = text;
+            document.getElementById('edit-entry-date').value = date || '';
+            document.getElementById('edit-modal-title').innerText = `${typeLabel} এডিট করুন`;
+            document.getElementById('edit-entry-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-entry-modal').classList.add('hidden');
+        }
+
+        async function saveEntryEdit() {
+            const caseId = document.getElementById('edit-case-id').value;
+            const entryId = document.getElementById('edit-entry-id').value;
+            const updatedText = document.getElementById('edit-entry-text').value.trim();
+            const updatedDate = document.getElementById('edit-entry-date').value;
+
+            if (!updatedText) {
+                alert("বিবরণ ফাঁকা রাখা যাবে না।");
+                return;
+            }
+
+            try {
+                await db.collection('cases').doc(caseId).collection('orders').doc(entryId).update({
+                    orderText: updatedText,
+                    orderDate: updatedDate,
+                    updatedByJudgeAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert("সফলভাবে আপডেট করা হয়েছে।");
+                closeEditModal();
+                loadOrders(caseId);
+            } catch (err) {
+                alert("আপডেট করতে ব্যর্থ: " + err.message);
+            }
+        }
+
         async function submitOrder(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('judge-submit-btn');
@@ -1177,7 +1272,6 @@
             }
         }
 
-        // --- প্রিন্ট ফাংশনালিটি ---
         function triggerPrint(elementId) {
             document.querySelectorAll('#printable-area, #printable-notice, #printable-cause-list').forEach(el => el.classList.remove('print-active'));
             const target = document.getElementById(elementId);
@@ -1186,13 +1280,8 @@
             window.print();
         }
 
-        function previewOrderSheet() {
-            triggerPrint('printable-area');
-        }
-
-        function printCauseList() {
-            triggerPrint('printable-cause-list');
-        }
+        function previewOrderSheet() { triggerPrint('printable-area'); }
+        function printCauseList() { triggerPrint('printable-cause-list'); }
 
         function previewNoticeSheet() {
             if (!currentSelectedCase) {
