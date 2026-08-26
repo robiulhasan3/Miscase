@@ -52,7 +52,7 @@
 
     <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
 
-        <!-- ১. নাগরিক কেস ট্র্যাকিং সেকশন (পাবলিক - লগইন ছাড়া) -->
+        <!-- ১. নাগরিক কেস ট্র্যাকিং সেকশন -->
         <section id="public-tracking-section" class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md border-t-4 border-emerald-700 no-print">
             <h2 class="text-lg font-bold text-center text-emerald-800 mb-1">🔍 নাগরিক কেস ট্র্যাকিং (পাবলিক সার্ভিস)</h2>
             <p class="text-xs text-slate-500 text-center mb-4">আপনার মামলার বর্তমান অবস্থা ও পরবর্তী শুনানির তারিখ জানতে মামলা নম্বর লিখুন</p>
@@ -62,7 +62,6 @@
                 <button onclick="trackPublicCase()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2 rounded-lg font-semibold text-sm transition shrink-0">খুঁজুন</button>
             </div>
 
-            <!-- ট্র্যাকিং রেজাল্ট প্রদর্শন -->
             <div id="public-case-result" class="hidden bg-slate-50 border rounded-lg p-4 space-y-3 text-xs"></div>
         </section>
 
@@ -97,7 +96,7 @@
         <!-- ৩. মূল ড্যাশবোর্ড -->
         <div id="app-dashboard" class="hidden space-y-6">
 
-            <!-- 🏛️ বিচারক এক্সক্লুসিভ সামারি ড্যাশবোর্ড -->
+            <!-- বিচারক এক্সক্লুসিভ ড্যাশবোর্ড -->
             <section id="judge-dashboard-stats" class="hidden bg-white p-6 rounded-xl shadow-md no-print border-l-4 border-emerald-800">
                 <h2 class="text-lg font-bold text-emerald-800 mb-3">⚖️ বিচারক ওভারভিউ ড্যাশবোর্ড</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -120,7 +119,7 @@
                 </div>
             </section>
 
-            <!-- কজ লিস্ট ফিল্টার সেকশন -->
+            <!-- কজ লিস্ট ফিল্টার -->
             <section class="bg-white p-6 rounded-xl shadow-md no-print">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
                     <div>
@@ -170,7 +169,7 @@
                     
                     <div class="md:col-span-2 border p-3 rounded-lg bg-emerald-50/50">
                         <label class="block text-sm font-bold text-emerald-800 mb-1">বাদী/আবেদনকারীগণের বিবরণ (একাধিক থাকলে নতুন লাইনে লিখুন)</label>
-                        <textarea id="plaintiff" rows="3" placeholder="১। সাইদুর রহমান, পিতা-জাহাঙ্গীর আলম, সাং-ছলিমাবাদ&#10;২। আব্দুর রউফ, পিতা-জাহাঙ্গীর আলম, সাং-ছলিমাবাদ" required class="w-full border p-2 rounded text-sm mb-2"></textarea>
+                        <textarea id="plaintiff" rows="3" placeholder="১। সাইদুর রহমান, পিতা-জাহাঙ্গীর আলম, সাং-ছলিমাবাদ" required class="w-full border p-2 rounded text-sm mb-2"></textarea>
                         
                         <label class="block text-xs font-semibold text-slate-600 mb-1">বাদীদের মোবাইল নম্বর (কমা দিয়ে লিখুন)</label>
                         <input type="text" id="plaintiff-mobile" placeholder="০১৭৮২-১৭২০৭৮, ০১৮০০-০০০০০০" class="w-full border p-2 rounded text-sm bg-white">
@@ -178,24 +177,24 @@
 
                     <div class="md:col-span-2 border p-3 rounded-lg bg-amber-50/50">
                         <label class="block text-sm font-bold text-amber-800 mb-1">বিবাদী/প্রতিপক্ষগণের বিবরণ (একাধিক থাকলে নতুন লাইনে লিখুন)</label>
-                        <textarea id="defendant" rows="3" placeholder="১। কুলসুম বেগম, জং-মোঃ মুর্শিদ মিয়া&#10;২। সেলিনা আক্তার, জং-খুরশিদ মিয়া" required class="w-full border p-2 rounded text-sm mb-2"></textarea>
+                        <textarea id="defendant" rows="3" placeholder="১। কুলসুম বেগম, জং-মোঃ মুর্শিদ মিয়া" required class="w-full border p-2 rounded text-sm mb-2"></textarea>
                         
                         <label class="block text-xs font-semibold text-slate-600 mb-1">বিবাদীদের মোবাইল নম্বর (যদি থাকে, কমা দিয়ে লিখুন)</label>
-                        <input type="text" id="defendant-mobile" placeholder="০১৭০০-০০০০০০, ০১৯০০-০০০০০০" class="w-full border p-2 rounded text-sm bg-white">
+                        <input type="text" id="defendant-mobile" placeholder="০১৭০০-০০০০০০" class="w-full border p-2 rounded text-sm bg-white">
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium mb-1">মামলার বিষয়বস্তু/সারসংক্ষেপ (নোটিশে প্রদর্শিত বিষয়)</label>
+                        <label class="block text-sm font-medium mb-1">মামলার বিষয়বস্তু/সারসংক্ষেপ</label>
                         <input type="text" id="case-subject" placeholder="যেমন: নামজারী ও জমাখারিজ মোকদ্দমা নং- ৭৯৯/২১-২২ মূলে সৃজিত ২২৯৮ নং খতিয়ান আংশিক বাতিল" required class="w-full border p-2 rounded text-sm">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700 font-semibold">কেস রুজুর তারিখ (ম্যানুয়াল সিলেক্ট)</label>
-                        <input type="date" id="case-filing-date" required class="w-full border border-slate-300 p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <label class="block text-sm font-medium mb-1 text-slate-700 font-semibold">কেস রুজুর তারিখ</label>
+                        <input type="date" id="case-filing-date" required class="w-full border border-slate-300 p-2 rounded text-sm outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-emerald-800 font-semibold">১ম শুনানীর তারিখ (ম্যানুয়াল সিলেক্ট)</label>
-                        <input type="date" id="first-hearing-date" required class="w-full border border-emerald-500 p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <label class="block text-sm font-medium mb-1 text-emerald-800 font-semibold">১ম শুনানীর তারিখ</label>
+                        <input type="date" id="first-hearing-date" required class="w-full border border-emerald-500 p-2 rounded text-sm outline-none">
                     </div>
 
                     <div class="md:col-span-2">
@@ -203,14 +202,14 @@
                         <input type="file" id="initial-file" accept="image/*,.pdf" class="w-full border p-1 rounded text-sm bg-slate-50">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium mb-1">কেস রুজুর সময় প্রাথমিক বিবরণ/তথ্য (পেশকার নোট)</label>
-                        <textarea id="initial-note" rows="3" required placeholder="নথি উপস্থাপন করা হলো। প্রয়োজনীয় কাগজপত্র সংযুক্ত আছে..." class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                        <label class="block text-sm font-medium mb-1">কেস রুজুর সময় প্রাথমিক বিবরণ/তথ্য</label>
+                        <textarea id="initial-note" rows="3" required placeholder="নথি উপস্থাপন করা হলো..." class="w-full border p-2 rounded text-sm outline-none"></textarea>
                     </div>
                     <button type="submit" id="create-case-btn" class="md:col-span-2 bg-emerald-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-800 transition">কেস রুজু করে বিচারকের নিকট পাঠান</button>
                 </form>
             </section>
 
-            <!-- পেশকার: শুনানীর দিনে নথি উপস্থাপন সেকশন -->
+            <!-- পেশকার: পুনঃশুনানি সেকশন -->
             <section id="peshkar-submission-section" class="hidden bg-white p-6 rounded-xl shadow-md space-y-4 no-print border-2 border-emerald-600">
                 <div class="flex justify-between items-center border-b pb-2">
                     <h2 class="text-lg font-bold text-emerald-800">পুনঃশুনানি ও নথি উপস্থাপন (পেশকার)</h2>
@@ -222,12 +221,12 @@
                 <form onsubmit="submitPeshkarNote(event)" class="space-y-3">
                     <input type="hidden" id="peshkar-selected-case-id">
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-emerald-800 font-semibold">আদেশের/উপস্থাপনের তারিখ (ম্যানুয়াল সিলেক্ট)</label>
-                        <input type="date" id="peshkar-order-date" required class="w-full border border-emerald-500 p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <label class="block text-sm font-medium mb-1 text-emerald-800 font-semibold">উপস্থাপনের তারিখ</label>
+                        <input type="date" id="peshkar-order-date" required class="w-full border border-emerald-500 p-2 rounded text-sm outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">আজকের শুনানীর জন্য নথি উপস্থাপন বিবরণ</label>
-                        <textarea id="peshkar-hearing-note" rows="3" required placeholder="আজ শুনানীর দিন ধার্য আছে। বাদী উপস্থিত, বিবাদী অনুপস্থিত..." class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                        <textarea id="peshkar-hearing-note" rows="3" required placeholder="আজ শুনানীর দিন ধার্য আছে..." class="w-full border p-2 rounded text-sm outline-none"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">নতুন কোনো প্রমাণ/নথি থাকলে আপলোড করুন (ঐচ্ছিক, সর্বোচ্চ ৮০০ KB)</label>
@@ -241,7 +240,7 @@
                 </form>
             </section>
 
-            <!-- সকল চলমান মামলা তালিকা -->
+            <!-- চলমান মামলা তালিকা -->
             <section class="bg-white p-6 rounded-xl shadow-md no-print">
                 <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">সকল চলমান বিবিধ মোকদ্দমাসমূহ</h2>
                 <div class="overflow-x-auto">
@@ -260,7 +259,7 @@
                 </div>
             </section>
 
-            <!-- ইতিহাস ও বিস্তারিত দেখার সেকশন -->
+            <!-- ইতিহাস ও বিস্তারিত -->
             <section id="case-history-section" class="hidden bg-white p-6 rounded-xl shadow-md space-y-4 no-print">
                 <div class="bg-slate-50 p-4 rounded-lg">
                     <h3 class="text-sm font-bold text-slate-700 mb-2">নথির ইতিহাস ও আদেশনামা:</h3>
@@ -288,7 +287,7 @@
                     <input type="hidden" id="selected-case-id">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium mb-1 font-semibold text-emerald-800">আদেশের তারিখ (ম্যানুয়াল সিলেক্ট)</label>
+                            <label class="block text-sm font-medium mb-1 font-semibold text-emerald-800">আদেশের তারিখ</label>
                             <input type="date" id="order-date" required class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed border-emerald-500">
                         </div>
                         <div>
@@ -297,22 +296,25 @@
                         </div>
                     </div>
 
-                    <!-- দ্রুত আদেশ ড্রপডাউন -->
+                    <!-- আপডেটেড দ্রুত আদেশ ড্রপডাউন -->
                     <div>
                         <label class="block text-sm font-medium mb-1 text-emerald-800">⚡ দ্রুত আদেশ নির্বাচন করুন (আদেশের টেমপ্লেট)</label>
                         <select id="order-template-select" onchange="applyOrderTemplate()" class="w-full border border-emerald-300 p-2 rounded text-sm bg-emerald-50 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed">
                             <option value="">-- ড্রপডাউন হতে দ্রুত আদেশ বেছে নিন (ঐচ্ছিক) --</option>
-                            <option value="নথি পেশ করা হলো। বাদী ও বিবাদী উভয় পক্ষ হাজির আছেন। শুনানির জন্য প্রস্তুত না থাকায় আগামী ..... তারিখে পরবর্তী শুনানির দিন ধার্য করা হলো।">১. নথি পেশ ও পুনঃশুনানির দিন ধার্য</option>
-                            <option value="নথি পেশ করা হলো। বিবাদী অনুপস্থিত। বিবাদীর প্রতি নোটিশ/সমন জারির নির্দেশ প্রদান করা হলো। আগামী ..... তারিখ কারণ দর্শানো/শুনানির জন্য দিন ধার্য করা হলো।">২. বিবাদীকে নোটিশ/সমন জারির আদেশ</option>
-                            <option value="নথি পেশ করা হলো। সরেজমিনে তদন্তপূর্বক প্রতিবেদন প্রেরণের জন্য সংশ্লিষ্ট ইউনিয়ন ভূমি সহকারী কর্মকর্তাকে নির্দেশ প্রদান করা হলো। আগামী ..... তারিখে তদন্ত প্রতিবেদনের জন্য দিন ধার্য করা হলো।">৩. ইউনিয়ন ভূমি সহকারী কর্মকর্তার নিকট তদন্তের আদেশ</option>
-                            <option value="নথি ও কাগজপত্র পর্যালোচনা করা হলো। আবেদনকারীর বিবিধ মোকদ্দমার আবেদনটি গ্রহণযোগ্য বলে বিবেচিত হওয়ায় নামজারি খতিয়ান সংশোধনের জন্য সহকারী কমিশনার (ভূমি) নির্দেশ দেওয়া হলো। মোকদ্দমাটি নিষ্পত্তি করা হলো।">৪. নামজারি মঞ্জুর (চূড়ান্ত নিষ্পত্তি আদেশ)</option>
-                            <option value="নথি পর্যালোচনা করা হলো। আবেদনকারী উপযুক্ত তথ্য ও প্রমাণাদি উপস্থাপন করতে ব্যর্থ হওয়ায় বিবিধ মোকদ্দমার আবেদনটি না-মঞ্জুর (বাতিল) করা হলো। মোকদ্দমাটি নিষ্পত্তি করা হলো।">৫. আবেদন না-মঞ্জুর (চূড়ান্ত নিষ্পত্তি আদেশ)</option>
+                            <option value="আবেদনকারীকে শুনলাম। রেকর্ড পর্যালোচনা ও সরেজমিন তদন্তপূর্বক প্রতিবেদন দাখিলের জন্য সংশ্লিষ্ট ইউনিয়ন ভূমি সহকারী কর্মকর্তাকে বলা হলো। বিবাদীকে/বিবাদীদের শুনানীতে হাজিরের জন্য নোটিশ প্রদান করা হোক।">১. আবেদনকারীকে শুনলাম... (ইউএলএও তদন্ত + বিবাদীকে নোটিশ)</option>
+                            <option value="আবেদনকারীকে শুনলাম। রেকর্ড পর্যালোচনা ও সরেজমিন তদন্তপূর্বক প্রতিবেদন দাখিলের জন্য সংশ্লিষ্ট ইউনিয়ন ভূমি সহকারী কর্মকর্তাকে বলা হলো।">২. আবেদনকারীকে শুনলাম... (ইউএলএও তদন্তের আদেশ)</option>
+                            <option value="সংশ্লিষ্ট ইউনিয়ন ভূমি সহকারী কর্মকর্তার প্রতিবেদন গ্রহণ করা হলো। সার্ভেয়ারকে প্রতিবেদন দাখিলের জন্য বলা হলো।">৩. ইউএলএও প্রতিবেদন গ্রহণ ও সার্ভেয়ারকে তদন্তের নির্দেশ</option>
+                            <option value="বিবাদীদের পুনরায় নোটিশ প্রদান করা হোক।">৪. বিবাদীদের পুনরায় নোটিশ প্রদান</option>
+                            <option value="সংশ্লিষ্ট ইউনিয়ন ভূমি সহকারী কর্মকর্তার প্রতিবেদন গ্রহণ করা হলো।">৫. ইউএলএও প্রতিবেদন গ্রহণ করা হলো</option>
+                            <option value="বাদী ও বিবাদী গড়হাজির।">৬. বাদী ও বিবাদী গড়হাজির</option>
+                            <option value="নথি ও কাগজপত্র পর্যালোচনা করা হলো। আবেদনকারীর বিবিধ মোকদ্দমার আবেদনটি গ্রহণযোগ্য বলে বিবেচিত হওয়ায় নামজারি খতিয়ান সংশোধনের নির্দেশ দেওয়া হলো। মোকদ্দমাটি নিষ্পত্তি করা হলো।">৭. নামজারি মঞ্জুর (চূড়ান্ত নিষ্পত্তি আদেশ)</option>
+                            <option value="নথি পর্যালোচনা করা হলো। আবেদনকারী উপযুক্ত তথ্য ও প্রমাণাদি উপস্থাপন করতে ব্যর্থ হওয়ায় বিবিধ মোকদ্দমার আবেদনটি না-মঞ্জুর করা হলো। মোকদ্দমাটি নিষ্পত্তি করা হলো।">৮. আবেদন না-মঞ্জুর (চূড়ান্ত নিষ্পত্তি আদেশ)</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">আজকের শুনানীর পর্যালোচনা ও আদেশ (Order Details)</label>
-                        <textarea id="order-text" rows="4" required placeholder="নথি উপস্থাপন করা হলো। বাদী উপস্থিত আছে..." class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"></textarea>
+                        <textarea id="order-text" rows="4" required placeholder="নথি উপস্থাপন করা হলো..." class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">আদেশের সাথে সম্পর্কিত নথি/প্রতিবেদন সংযুক্তি (ঐচ্ছিক, সর্বোচ্চ ৮০০ KB)</label>
@@ -330,7 +332,7 @@
                 </form>
             </section>
 
-            <!-- আদেশনামা প্রিন্ট ফরম্যাট (বাংলাদেশ ফরম নং- ২৭০) -->
+            <!-- আদেশনামা প্রিন্ট ফরম্যাট -->
             <section id="printable-area" class="hidden bg-white p-8 border my-4 relative">
                 <div class="mb-4 border-b pb-3 text-center leading-tight space-y-0.5">
                     <p class="text-xs text-left mb-1">বাংলাদেশ ফরম নং- ২৭০</p>
@@ -444,7 +446,7 @@
         </div>
     </main>
 
-    <!-- ✏️ বিচারকের জন্য এডিট করার মডাল -->
+    <!-- ✏️ এডিট করার মডাল -->
     <div id="edit-entry-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
@@ -701,6 +703,7 @@
             }
         }
 
+        // আপডেটেড দ্রুত আদেশ নির্বাচন ফাংশন
         function applyOrderTemplate() {
             const templateValue = document.getElementById('order-template-select').value;
             const orderTextArea = document.getElementById('order-text');
@@ -709,7 +712,8 @@
             if (templateValue) {
                 orderTextArea.value = templateValue;
                 const selectElem = document.getElementById('order-template-select');
-                isFinalCheckbox.checked = (selectElem.selectedIndex === 4 || selectElem.selectedIndex === 5);
+                // ৭ ও ৮ নম্বর অপশন সিলেক্ট করলে চূড়ান্ত রায় চেকবক্স স্বয়ংক্রিয়ভাবে টিক হবে
+                isFinalCheckbox.checked = (selectElem.selectedIndex === 7 || selectElem.selectedIndex === 8);
             }
         }
 
@@ -1056,7 +1060,7 @@
                 let judgeTextRaw = session.judgeOrders.map(j => toBanglaNum(j.orderText)).join("\n");
 
                 let judgeFilesHTML = session.judgeOrders.filter(j => j.file).map(j => 
-                    `<a href="${j.file.data}" target="_blank" class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 border border-blue-300 px-2 py-1 rounded my-1 text-xs font-semibold">📎 আদেশের ফাইল (${j.file.name})</a>`
+                    `<a href="${j.file.data}" target="_blank" class="inline-flex items-center gap-1 text-blue-700 bg-blue-300 px-2 py-1 rounded my-1 text-xs font-semibold">📎 আদেশের ফাইল (${j.file.name})</a>`
                 ).join(" ");
 
                 let nextDateInfo = "";
@@ -1085,7 +1089,6 @@
                     </div>
                 `;
 
-                /* প্রিন্টের জন্য পরিবর্তন: font-normal এবং সাধারণ ফন্ট সাইজ ব্যবহার করা হয়েছে */
                 printOrdersHTML += `
                     <tr>
                         <td class="border border-slate-400 p-2 text-center align-top font-bold">
