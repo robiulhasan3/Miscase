@@ -240,9 +240,15 @@
                 </form>
             </section>
 
-            <!-- চলমান মামলা তালিকা -->
-            <section class="bg-white p-6 rounded-xl shadow-md no-print">
-                <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">সকল চলমান বিবিধ মোকদ্দমাসমূহ</h2>
+            <!-- চলমান মামলা তালিকা (সার্চ সুবিধা সহ) -->
+            <section class="bg-white p-6 rounded-xl shadow-md no-print space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+                    <h2 class="text-lg font-bold text-slate-800">সকল চলমান বিবিধ মোকদ্দমাসমূহ</h2>
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" id="case-search-input" onkeyup="filterCaseList()" placeholder="🔍 মামলা নং বা নাম দিয়ে খুঁজুন..." class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-700">
@@ -296,7 +302,7 @@
                         </div>
                     </div>
 
-                    <!-- আপডেটেড দ্রুত আদেশ ড্রপডাউন -->
+                    <!-- দ্রুত আদেশ ড্রপডাউন -->
                     <div>
                         <label class="block text-sm font-medium mb-1 text-emerald-800">⚡ দ্রুত আদেশ নির্বাচন করুন (আদেশের টেমপ্লেট)</label>
                         <select id="order-template-select" onchange="applyOrderTemplate()" class="w-full border border-emerald-300 p-2 rounded text-sm bg-emerald-50 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed">
@@ -322,7 +328,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="is-final-verdict" class="w-4 h-4 text-emerald-600 disabled:cursor-not-allowed">
-                        <label for="is-final-verdict" class="text-sm font-medium text-red-600">এটি চূড়ান্ত রায়/নিষ্পত্তি নির্দেশক আদেশ</label>
+                        <label for="is-final-verdict" class="text-sm font-medium text-red-600">এটি চূড়ান্তরায়/নিষ্পত্তি নির্দেশক আদেশ</label>
                     </div>
                     <div class="flex gap-2 flex-wrap">
                         <button id="judge-submit-btn" type="submit" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800 disabled:bg-slate-400 disabled:cursor-not-allowed">আদেশ প্রদান করুন ও পেশকারের নিকট পাঠান</button>
@@ -710,7 +716,7 @@
             }
         }
 
-        // আপডেটেড দ্রুত আদেশ নির্বাচন ফাংশন
+        // দ্রুত আদেশ নির্বাচন ফাংশন
         function applyOrderTemplate() {
             const templateValue = document.getElementById('order-template-select').value;
             const orderTextArea = document.getElementById('order-text');
@@ -719,7 +725,6 @@
             if (templateValue) {
                 orderTextArea.value = templateValue;
                 const selectElem = document.getElementById('order-template-select');
-                // ৭ ও ৮ নম্বর অপশন সিলেক্ট করলে চূড়ান্ত রায় চেকবক্স স্বয়ংক্রিয়ভাবে টিক হবে
                 isFinalCheckbox.checked = (selectElem.selectedIndex === 7 || selectElem.selectedIndex === 8);
             }
         }
@@ -908,7 +913,7 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const tr = document.createElement('tr');
-                    tr.className = "border-b hover:bg-slate-50";
+                    tr.className = "border-b hover:bg-slate-50 case-row";
 
                     let banglaNextDate = formatBanglaDate(data.nextDate);
                     let statusBadge = data.status === 'resolved' 
@@ -922,9 +927,9 @@
                         : '';
 
                     tr.innerHTML = `
-                        <td class="p-3 font-semibold">${toBanglaNum(data.caseNo)}</td>
-                        <td class="p-3">${toBanglaNum(data.subject)}</td>
-                        <td class="p-3 text-xs">বাদী: ${toBanglaNum(data.plaintiff)}<br>বিবাদী: ${toBanglaNum(data.defendant)}</td>
+                        <td class="p-3 font-semibold case-no-cell">${toBanglaNum(data.caseNo)} <span class="hidden">${toEnglishNum(data.caseNo)}</span></td>
+                        <td class="p-3 case-subject-cell">${toBanglaNum(data.subject)}</td>
+                        <td class="p-3 text-xs case-parties-cell">বাদী: ${toBanglaNum(data.plaintiff)}<br>বিবাদী: ${toBanglaNum(data.defendant)}</td>
                         <td class="p-3">${statusBadge}</td>
                         <td class="p-3 text-right">
                             <button onclick="selectCase('${doc.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs transition">নথি খুলুন</button>
@@ -933,8 +938,32 @@
                     `;
                     tbody.appendChild(tr);
                 });
+
+                // যদি আগের কোনো সার্চ ফিল্টার থেকে থাকে, তবে সেটি পুনরাবৃত্তি প্রয়োগ করা
+                filterCaseList();
             }, error => {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600 font-semibold">ত্রুটি: ${error.message}</td></tr>`;
+            });
+        }
+
+        // 🔍 চলমান মামলার তালিকায় ইনস্ট্যান্ট ফিল্টার/সার্চ করার ফাংশন
+        function filterCaseList() {
+            const input = document.getElementById('case-search-input');
+            const filterRaw = input.value.trim().toLowerCase();
+            const filterEng = toEnglishNum(filterRaw);
+            const filterBng = toBanglaNum(filterRaw);
+
+            const rows = document.querySelectorAll('#case-list-body .case-row');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const textEng = toEnglishNum(text);
+
+                if (filterRaw === '' || text.includes(filterRaw) || text.includes(filterBng) || textEng.includes(filterEng)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         }
 
@@ -1178,7 +1207,6 @@
 
                 await db.collection('cases').doc(caseId).collection('orders').doc(entryId).update(updatePayload);
 
-                // যদি বিচারকের আদেশের পরবর্তী তারিখ পরিবর্তন করা হয়, তবে মেইন কেসেও `nextDate` আপডেট করে দেয়া
                 if (entryType === 'judge_order' && updatedNextDate) {
                     await db.collection('cases').doc(caseId).update({
                         nextDate: updatedNextDate
@@ -1188,7 +1216,6 @@
                 alert("সফলভাবে আপডেট করা হয়েছে।");
                 closeEditModal();
 
-                // মেইন অবজেক্ট আপডেট করে ভিউ রিফ্রেশ
                 const caseDoc = await db.collection('cases').doc(caseId).get();
                 if(caseDoc.exists) {
                     currentSelectedCase = { id: caseDoc.id, ...caseDoc.data() };
