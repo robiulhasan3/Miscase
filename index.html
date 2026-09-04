@@ -456,10 +456,17 @@
             
             <input type="hidden" id="edit-entry-id">
             <input type="hidden" id="edit-case-id">
+            <input type="hidden" id="edit-entry-type">
 
-            <div>
-                <label class="block text-xs font-semibold mb-1">তারিখ</label>
-                <input type="date" id="edit-entry-date" class="w-full border rounded p-2 text-sm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">আদেশের/নোটের তারিখ</label>
+                    <input type="date" id="edit-entry-date" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div id="edit-next-date-container">
+                    <label class="block text-xs font-semibold mb-1 text-emerald-800">পরবর্তী শুনানির তারিখ (যদি থাকে)</label>
+                    <input type="date" id="edit-next-date" class="w-full border border-emerald-400 rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
             </div>
 
             <div>
@@ -1007,7 +1014,7 @@
             const sessions = [];
             rawList.forEach(item => {
                 if (item.type === 'peshkar_note') {
-                    sessions.push({ peshkarNotes: [{id: item.id, text: item.orderText, file: item.file, orderDate: item.orderDate}], judgeOrders: [], date: item.orderDate });
+                    sessions.push({ peshkarNotes: [{id: item.id, text: item.orderText, file: item.file, orderDate: item.orderDate, nextDate: item.nextDate || ''}], judgeOrders: [], date: item.orderDate });
                 } else {
                     if (sessions.length === 0) {
                         sessions.push({ peshkarNotes: [], judgeOrders: [], date: item.orderDate });
@@ -1039,7 +1046,7 @@
 
                 let peshkarContentHTML = session.peshkarNotes.map(n => {
                     let editBtn = (currentUser && currentUser.role === 'judge') 
-                        ? `<button onclick="openEditModal('${caseId}', '${n.id}', \`${escapeQuotes(n.text)}\`, '${n.orderDate}', 'পেশকার নোট')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট নোট</button>`
+                        ? `<button onclick="openEditModal('${caseId}', '${n.id}', \`${escapeQuotes(n.text)}\`, '${n.orderDate}', '${n.nextDate || ''}', 'peshkar_note')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট নোট</button>`
                         : '';
                     return `<p class="text-slate-600 mb-1">${toBanglaNum(n.text)} ${editBtn}</p>`;
                 }).join("");
@@ -1052,7 +1059,7 @@
 
                 let judgeContentHTML = session.judgeOrders.map(j => {
                     let editBtn = (currentUser && currentUser.role === 'judge') 
-                        ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', 'বিচারকের আদেশ')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ</button>`
+                        ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', '${j.nextDate || ''}', 'judge_order')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ ও তারিখ</button>`
                         : '';
                     return `<p class="text-slate-800 font-medium mb-1">${toBanglaNum(j.orderText)} ${editBtn}</p>`;
                 }).join("");
@@ -1121,12 +1128,23 @@
             return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
         }
 
-        function openEditModal(caseId, entryId, text, date, typeLabel) {
+        function openEditModal(caseId, entryId, text, date, nextDate, entryType) {
             document.getElementById('edit-case-id').value = caseId;
             document.getElementById('edit-entry-id').value = entryId;
             document.getElementById('edit-entry-text').value = text;
             document.getElementById('edit-entry-date').value = date || '';
-            document.getElementById('edit-modal-title').innerText = `${typeLabel} এডিট করুন`;
+            document.getElementById('edit-next-date').value = nextDate || '';
+            document.getElementById('edit-entry-type').value = entryType;
+
+            const nextDateContainer = document.getElementById('edit-next-date-container');
+            if (entryType === 'judge_order') {
+                nextDateContainer.classList.remove('hidden');
+                document.getElementById('edit-modal-title').innerText = `বিচারকের আদেশ ও পুনঃশুনানীর তারিখ এডিট করুন`;
+            } else {
+                nextDateContainer.classList.add('hidden');
+                document.getElementById('edit-modal-title').innerText = `পেশকার নোট এডিট করুন`;
+            }
+
             document.getElementById('edit-entry-modal').classList.remove('hidden');
         }
 
@@ -1139,6 +1157,8 @@
             const entryId = document.getElementById('edit-entry-id').value;
             const updatedText = document.getElementById('edit-entry-text').value.trim();
             const updatedDate = document.getElementById('edit-entry-date').value;
+            const updatedNextDate = document.getElementById('edit-next-date').value;
+            const entryType = document.getElementById('edit-entry-type').value;
 
             if (!updatedText) {
                 alert("বিবরণ ফাঁকা রাখা যাবে না।");
@@ -1146,15 +1166,37 @@
             }
 
             try {
-                await db.collection('cases').doc(caseId).collection('orders').doc(entryId).update({
+                const updatePayload = {
                     orderText: updatedText,
                     orderDate: updatedDate,
                     updatedByJudgeAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+
+                if (entryType === 'judge_order') {
+                    updatePayload.nextDate = updatedNextDate || null;
+                }
+
+                await db.collection('cases').doc(caseId).collection('orders').doc(entryId).update(updatePayload);
+
+                // যদি বিচারকের আদেশের পরবর্তী তারিখ পরিবর্তন করা হয়, তবে মেইন কেসেও `nextDate` আপডেট করে দেয়া
+                if (entryType === 'judge_order' && updatedNextDate) {
+                    await db.collection('cases').doc(caseId).update({
+                        nextDate: updatedNextDate
+                    });
+                }
 
                 alert("সফলভাবে আপডেট করা হয়েছে।");
                 closeEditModal();
+
+                // মেইন অবজেক্ট আপডেট করে ভিউ রিফ্রেশ
+                const caseDoc = await db.collection('cases').doc(caseId).get();
+                if(caseDoc.exists) {
+                    currentSelectedCase = { id: caseDoc.id, ...caseDoc.data() };
+                }
+
                 loadOrders(caseId);
+                loadCases();
+                fetchCauseList();
             } catch (err) {
                 alert("আপডেট করতে ব্যর্থ: " + err.message);
             }
@@ -1208,6 +1250,12 @@
                 document.getElementById('judge-order-file').value = '';
                 document.getElementById('order-template-select').value = '';
                 alert("আদেশ সংরক্ষণ হয়েছে এবং পরবর্তী কার্যক্রমের জন্য পেশকারের নিকট প্রেরিত হয়েছে।");
+                
+                const caseDoc = await db.collection('cases').doc(caseId).get();
+                if(caseDoc.exists) {
+                    currentSelectedCase = { id: caseDoc.id, ...caseDoc.data() };
+                }
+
                 loadOrders(caseId);
                 loadCases();
                 fetchCauseList();
