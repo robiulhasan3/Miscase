@@ -452,11 +452,11 @@
         </div>
     </main>
 
-    <!-- ✏️ এডিট করার মডাল -->
-    <div id="edit-entry-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
+    <!-- ✏️ এডিট করার মডাল (বিচারক কর্তৃক সকল ফিল্ড এডিট সুবিধা সহ) -->
+    <div id="edit-entry-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4 my-8">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 id="edit-modal-title" class="text-base font-bold text-emerald-800">এন্ট্রি এডিট করুন (বিচারক)</h3>
+                <h3 id="edit-modal-title" class="text-base font-bold text-emerald-800">তথ্য এডিট করুন (বিচারক)</h3>
                 <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
             </div>
             
@@ -464,6 +464,42 @@
             <input type="hidden" id="edit-case-id">
             <input type="hidden" id="edit-entry-type">
 
+            <!-- মামলার মূল তথ্য এডিটিং ফিল্ডসমূহ (কেস রুজু সম্পর্কিত) -->
+            <div id="case-fields-edit-group" class="grid grid-cols-1 md:grid-cols-2 gap-3 border-b pb-4">
+                <div class="md:col-span-2 text-xs font-bold text-emerald-800 bg-emerald-50 p-2 rounded">
+                    📋 মামলার মূল তথ্যাবলী (পেশকার কর্তৃক রুজুকৃত):
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">মামলা নম্বর</label>
+                    <input type="text" id="edit-case-no" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1">মৌজা ও খতিয়ান</label>
+                    <input type="text" id="edit-case-location" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold mb-1">বাদী/আবেদনকারীর বিবরণ</label>
+                    <textarea id="edit-plaintiff" rows="2" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold mb-1">বাদীদের মোবাইল নম্বর</label>
+                    <input type="text" id="edit-plaintiff-mobile" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold mb-1">বিবাদী/প্রতিপক্ষের বিবরণ</label>
+                    <textarea id="edit-defendant" rows="2" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold mb-1">বিবাদীদের মোবাইল নম্বর</label>
+                    <input type="text" id="edit-defendant-mobile" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold mb-1">মামলার বিষয়বস্তু/সারসংক্ষেপ</label>
+                    <input type="text" id="edit-case-subject" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+
+            <!-- আদেশের তারিখ ও বিবরণ -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold mb-1">আদেশের/নোটের তারিখ</label>
@@ -477,7 +513,7 @@
 
             <div>
                 <label class="block text-xs font-semibold mb-1">বিবরণ / টেক্সট</label>
-                <textarea id="edit-entry-text" rows="5" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                <textarea id="edit-entry-text" rows="4" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t">
@@ -716,7 +752,6 @@
             }
         }
 
-        // দ্রুত আদেশ নির্বাচন ফাংশন
         function applyOrderTemplate() {
             const templateValue = document.getElementById('order-template-select').value;
             const orderTextArea = document.getElementById('order-text');
@@ -939,14 +974,12 @@
                     tbody.appendChild(tr);
                 });
 
-                // যদি আগের কোনো সার্চ ফিল্টার থেকে থাকে, তবে সেটি পুনরাবৃত্তি প্রয়োগ করা
                 filterCaseList();
             }, error => {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600 font-semibold">ত্রুটি: ${error.message}</td></tr>`;
             });
         }
 
-        // 🔍 চলমান মামলার তালিকায় ইনস্ট্যান্ট ফিল্টার/সার্চ করার ফাংশন
         function filterCaseList() {
             const input = document.getElementById('case-search-input');
             const filterRaw = input.value.trim().toLowerCase();
@@ -1075,7 +1108,7 @@
 
                 let peshkarContentHTML = session.peshkarNotes.map(n => {
                     let editBtn = (currentUser && currentUser.role === 'judge') 
-                        ? `<button onclick="openEditModal('${caseId}', '${n.id}', \`${escapeQuotes(n.text)}\`, '${n.orderDate}', '${n.nextDate || ''}', 'peshkar_note')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট নোট</button>`
+                        ? `<button onclick="openEditModal('${caseId}', '${n.id}', \`${escapeQuotes(n.text)}\`, '${n.orderDate}', '${n.nextDate || ''}', 'peshkar_note')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট তথ্য ও নোট</button>`
                         : '';
                     return `<p class="text-slate-600 mb-1">${toBanglaNum(n.text)} ${editBtn}</p>`;
                 }).join("");
@@ -1088,7 +1121,7 @@
 
                 let judgeContentHTML = session.judgeOrders.map(j => {
                     let editBtn = (currentUser && currentUser.role === 'judge') 
-                        ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', '${j.nextDate || ''}', 'judge_order')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ ও তারিখ</button>`
+                        ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', '${j.nextDate || ''}', 'judge_order')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ ও তথ্য</button>`
                         : '';
                     return `<p class="text-slate-800 font-medium mb-1">${toBanglaNum(j.orderText)} ${editBtn}</p>`;
                 }).join("");
@@ -1165,13 +1198,23 @@
             document.getElementById('edit-next-date').value = nextDate || '';
             document.getElementById('edit-entry-type').value = entryType;
 
+            if (currentSelectedCase) {
+                document.getElementById('edit-case-no').value = currentSelectedCase.caseNo || '';
+                document.getElementById('edit-case-location').value = currentSelectedCase.location || '';
+                document.getElementById('edit-plaintiff').value = currentSelectedCase.plaintiff || '';
+                document.getElementById('edit-plaintiff-mobile').value = currentSelectedCase.plaintiffMobile || '';
+                document.getElementById('edit-defendant').value = currentSelectedCase.defendant || '';
+                document.getElementById('edit-defendant-mobile').value = currentSelectedCase.defendantMobile || '';
+                document.getElementById('edit-case-subject').value = currentSelectedCase.subject || '';
+            }
+
             const nextDateContainer = document.getElementById('edit-next-date-container');
             if (entryType === 'judge_order') {
                 nextDateContainer.classList.remove('hidden');
-                document.getElementById('edit-modal-title').innerText = `বিচারকের আদেশ ও পুনঃশুনানীর তারিখ এডিট করুন`;
+                document.getElementById('edit-modal-title').innerText = `বিচারকের আদেশ ও মামলার তথ্য এডিট করুন`;
             } else {
                 nextDateContainer.classList.add('hidden');
-                document.getElementById('edit-modal-title').innerText = `পেশকার নোট এডিট করুন`;
+                document.getElementById('edit-modal-title').innerText = `পেশকার নোট ও মামলার তথ্য এডিট করুন`;
             }
 
             document.getElementById('edit-entry-modal').classList.remove('hidden');
@@ -1188,6 +1231,14 @@
             const updatedDate = document.getElementById('edit-entry-date').value;
             const updatedNextDate = document.getElementById('edit-next-date').value;
             const entryType = document.getElementById('edit-entry-type').value;
+
+            const updatedCaseNo = document.getElementById('edit-case-no').value.trim();
+            const updatedLocation = document.getElementById('edit-case-location').value.trim();
+            const updatedPlaintiff = document.getElementById('edit-plaintiff').value.trim();
+            const updatedPlaintiffMobile = document.getElementById('edit-plaintiff-mobile').value.trim();
+            const updatedDefendant = document.getElementById('edit-defendant').value.trim();
+            const updatedDefendantMobile = document.getElementById('edit-defendant-mobile').value.trim();
+            const updatedSubject = document.getElementById('edit-case-subject').value.trim();
 
             if (!updatedText) {
                 alert("বিবরণ ফাঁকা রাখা যাবে না।");
@@ -1207,13 +1258,23 @@
 
                 await db.collection('cases').doc(caseId).collection('orders').doc(entryId).update(updatePayload);
 
+                const caseUpdatePayload = {
+                    caseNo: updatedCaseNo,
+                    location: updatedLocation,
+                    plaintiff: updatedPlaintiff,
+                    plaintiffMobile: updatedPlaintiffMobile,
+                    defendant: updatedDefendant,
+                    defendantMobile: updatedDefendantMobile,
+                    subject: updatedSubject
+                };
+
                 if (entryType === 'judge_order' && updatedNextDate) {
-                    await db.collection('cases').doc(caseId).update({
-                        nextDate: updatedNextDate
-                    });
+                    caseUpdatePayload.nextDate = updatedNextDate;
                 }
 
-                alert("সফলভাবে আপডেট করা হয়েছে।");
+                await db.collection('cases').doc(caseId).update(caseUpdatePayload);
+
+                alert("মামলার তথ্য ও নোট/আদেশ সফলভাবে আপডেট করা হয়েছে।");
                 closeEditModal();
 
                 const caseDoc = await db.collection('cases').doc(caseId).get();
