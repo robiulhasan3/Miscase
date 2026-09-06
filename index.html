@@ -240,7 +240,7 @@
                 </form>
             </section>
 
-            <!-- চলমান মামলা তালিকা (সার্চ সুবিধা সহ) -->
+            <!-- চলমান মামলা তালিকা (সার্চ ও পেজিনেশন সুবিধা সহ) -->
             <section class="bg-white p-6 rounded-xl shadow-md no-print space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
                     <h2 class="text-lg font-bold text-slate-800">সকল চলমান বিবিধ মোকদ্দমাসমূহ</h2>
@@ -262,6 +262,15 @@
                         </thead>
                         <tbody id="case-list-body"></tbody>
                     </table>
+                </div>
+
+                <!-- পেজিনেশন নেভিগেশন প্যানেল -->
+                <div id="pagination-controls" class="flex justify-between items-center pt-3 border-t text-xs">
+                    <span id="page-indicator" class="text-slate-600 font-semibold">পৃষ্ঠা ১ এর ১</span>
+                    <div class="flex gap-2">
+                        <button id="prev-page-btn" onclick="changePage(-1)" class="bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-800 px-3 py-1.5 rounded transition font-semibold">পূর্ববর্তী</button>
+                        <button id="next-page-btn" onclick="changePage(1)" class="bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-800 px-3 py-1.5 rounded transition font-semibold">পরবর্তী</button>
+                    </div>
                 </div>
             </section>
 
@@ -545,6 +554,11 @@
 
         let currentUser = null;
         let currentSelectedCase = null;
+
+        // পেজিনেশনের জন্য ভ্যারিয়েবলসমূহ
+        let allCasesList = [];
+        let currentPage = 1;
+        const pageSize = 5;
 
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('causelist-date').value = todayStr;
@@ -939,65 +953,94 @@
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
 
             db.collection('cases').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-                tbody.innerHTML = '';
-                if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">কোনো চলমান মামলা পাওয়া যায়নি।</td></tr>';
-                    return;
-                }
-
+                allCasesList = [];
                 snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b hover:bg-slate-50 case-row";
-
-                    let banglaNextDate = formatBanglaDate(data.nextDate);
-                    let statusBadge = data.status === 'resolved' 
-                        ? '<span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800 font-semibold">নিষ্পত্তি</span>'
-                        : (data.status === 'peshkar_pending' 
-                            ? `<span class="px-2 py-1 text-xs rounded bg-amber-100 text-amber-800 font-semibold">পেশকারের কাছে অপেক্ষমান ${data.nextDate ? `<br>(পুনঃশুনানি: ${banglaNextDate})` : ''}</span>`
-                            : `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 font-semibold">বিচারকের কাছে প্রস্তুত ${data.nextDate ? `<br>(শুনানি: ${banglaNextDate})` : ''}</span>`);
-
-                    let deleteActionBtn = (currentUser && currentUser.role === 'judge')
-                        ? `<button onclick="deleteCaseDirect('${doc.id}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1 font-semibold transition">ডিলিট</button>`
-                        : '';
-
-                    tr.innerHTML = `
-                        <td class="p-3 font-semibold case-no-cell">${toBanglaNum(data.caseNo)} <span class="hidden">${toEnglishNum(data.caseNo)}</span></td>
-                        <td class="p-3 case-subject-cell">${toBanglaNum(data.subject)}</td>
-                        <td class="p-3 text-xs case-parties-cell">বাদী: ${toBanglaNum(data.plaintiff)}<br>বিবাদী: ${toBanglaNum(data.defendant)}</td>
-                        <td class="p-3">${statusBadge}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="selectCase('${doc.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs transition">নথি খুলুন</button>
-                            ${deleteActionBtn}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                    allCasesList.push({ id: doc.id, ...doc.data() });
                 });
 
+                currentPage = 1;
                 filterCaseList();
             }, error => {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600 font-semibold">ত্রুটি: ${error.message}</td></tr>`;
             });
         }
 
-        function filterCaseList() {
+        function getFilteredCases() {
             const input = document.getElementById('case-search-input');
             const filterRaw = input.value.trim().toLowerCase();
             const filterEng = toEnglishNum(filterRaw);
             const filterBng = toBanglaNum(filterRaw);
 
-            const rows = document.querySelectorAll('#case-list-body .case-row');
+            if (!filterRaw) return allCasesList;
 
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                const textEng = toEnglishNum(text);
-
-                if (filterRaw === '' || text.includes(filterRaw) || text.includes(filterBng) || textEng.includes(filterEng)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            return allCasesList.filter(data => {
+                const searchStr = `${data.caseNo || ''} ${data.subject || ''} ${data.plaintiff || ''} ${data.defendant || ''}`.toLowerCase();
+                const searchEng = toEnglishNum(searchStr);
+                return searchStr.includes(filterRaw) || searchStr.includes(filterBng) || searchEng.includes(filterEng);
             });
+        }
+
+        function filterCaseList() {
+            currentPage = 1;
+            renderPaginatedCases();
+        }
+
+        function renderPaginatedCases() {
+            const tbody = document.getElementById('case-list-body');
+            const filteredCases = getFilteredCases();
+
+            if (filteredCases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">কোনো চলমান মামলা পাওয়া যায়নি।</td></tr>';
+                document.getElementById('page-indicator').innerText = 'পৃষ্ঠা ০ এর ০';
+                document.getElementById('prev-page-btn').disabled = true;
+                document.getElementById('next-page-btn').disabled = true;
+                return;
+            }
+
+            const totalPages = Math.ceil(filteredCases.length / pageSize);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const pageData = filteredCases.slice(startIndex, startIndex + pageSize);
+
+            tbody.innerHTML = '';
+            pageData.forEach(data => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-slate-50 case-row";
+
+                let banglaNextDate = formatBanglaDate(data.nextDate);
+                let statusBadge = data.status === 'resolved' 
+                    ? '<span class="px-2 py-1 text-xs rounded bg-green-100 text-green-800 font-semibold">নিষ্পত্তি</span>'
+                    : (data.status === 'peshkar_pending' 
+                        ? `<span class="px-2 py-1 text-xs rounded bg-amber-100 text-amber-800 font-semibold">পেশকারের কাছে অপেক্ষমান ${data.nextDate ? `<br>(পুনঃশুনানি: ${banglaNextDate})` : ''}</span>`
+                        : `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800 font-semibold">বিচারকের কাছে প্রস্তুত ${data.nextDate ? `<br>(শুনানি: ${banglaNextDate})` : ''}</span>`);
+
+                let deleteActionBtn = (currentUser && currentUser.role === 'judge')
+                    ? `<button onclick="deleteCaseDirect('${data.id}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1 font-semibold transition">ডিলিট</button>`
+                    : '';
+
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold case-no-cell">${toBanglaNum(data.caseNo)}</td>
+                    <td class="p-3 case-subject-cell">${toBanglaNum(data.subject)}</td>
+                    <td class="p-3 text-xs case-parties-cell">বাদী: ${toBanglaNum(data.plaintiff)}<br>বিবাদী: ${toBanglaNum(data.defendant)}</td>
+                    <td class="p-3">${statusBadge}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="selectCase('${data.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs transition">নথি খুলুন</button>
+                        ${deleteActionBtn}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('page-indicator').innerText = `পৃষ্ঠা ${toBanglaNum(currentPage)} এর ${toBanglaNum(totalPages)}`;
+            document.getElementById('prev-page-btn').disabled = (currentPage === 1);
+            document.getElementById('next-page-btn').disabled = (currentPage === totalPages);
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderPaginatedCases();
         }
 
         async function selectCase(caseId) {
