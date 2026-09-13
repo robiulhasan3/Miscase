@@ -178,7 +178,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">মৌজা ও খতিয়ান</label>
-                        <input type="text" id="case-location" placeholder="যেমন: ছলিমাবাদ, খতিয়ান নং- ২২৯৮" required class="w-full border p-2 rounded text-sm">
+                        <input type="text" id="case-location" placeholder="যেমন: छलিমাবাদ, খতিয়ান নং- ২২৯৮" required class="w-full border p-2 rounded text-sm">
                     </div>
                     
                     <div class="md:col-span-2 border p-3 rounded-lg bg-emerald-50/50">
@@ -284,6 +284,15 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- রেজিস্টার ১৩ পেজিনেশন নেভিগেশন প্যানেল -->
+                <div id="register13-pagination-controls" class="flex justify-between items-center pt-3 border-t text-xs">
+                    <span id="reg13-page-indicator" class="text-slate-600 font-semibold">পৃষ্ঠা ১ এর ১</span>
+                    <div class="flex gap-2">
+                        <button id="reg13-prev-page-btn" onclick="changeReg13Page(-1)" class="bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-800 px-3 py-1.5 rounded transition font-semibold">পূর্ববর্তী</button>
+                        <button id="reg13-next-page-btn" onclick="changeReg13Page(1)" class="bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-800 px-3 py-1.5 rounded transition font-semibold">পরবর্তী</button>
+                    </div>
                 </div>
             </section>
 
@@ -550,7 +559,7 @@
             <!-- মামলার মূল তথ্য এডিটিং ফিল্ডসমূহ -->
             <div id="case-fields-edit-group" class="grid grid-cols-1 md:grid-cols-2 gap-3 border-b pb-4">
                 <div class="md:col-span-2 text-xs font-bold text-emerald-800 bg-emerald-50 p-2 rounded">
-                    📋 মামলার মূল তথ্যাবলী (পেশকার কর্তৃক রুজুকৃত):
+                    📋 মামলার মূল তথ্যাাবলী (পেশকার কর্তৃক রুজুকৃত):
                 </div>
                 <div>
                     <label class="block text-xs font-semibold mb-1">মামলা নম্বর</label>
@@ -629,11 +638,13 @@
         let currentUser = null;
         let currentSelectedCase = null;
 
-        // পেজিনেশনের ভ্যারিয়েবল
+        // পেজিনেশনের ভ্যারিয়েবল (সকল লিস্টে ১০ টি করে দেখাতে নির্দেশিত)
         let allCasesList = [];
+        let reg13CasesList = [];
         let statusFilter = 'all'; // সামারি ফিল্টারিংয়ের জন্য
         let currentPage = 1;
-        const pageSize = 5;
+        let reg13CurrentPage = 1;
+        const pageSize = 10;
 
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('causelist-date').value = todayStr;
@@ -990,13 +1001,11 @@
         }
 
         // ==========================================
-        // 📜 রেজিস্টার ১৩ লোড ও শর্টিং লজিক
+        // 📜 রেজিস্টার ১৩ লোড, শর্টিং ও পেজিনেশন লজিক
         // ==========================================
         async function fetchRegister13() {
             const tbody = document.getElementById('register13-table-body');
-            const printTbody = document.getElementById('print-register13-body');
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড ও শর্টিং হচ্ছে...</td></tr>';
-            printTbody.innerHTML = '';
 
             try {
                 const snapshot = await db.collection('cases').get();
@@ -1005,21 +1014,23 @@
                     return;
                 }
 
-                let casesList = [];
+                reg13CasesList = [];
                 for (let doc of snapshot.docs) {
                     let caseData = doc.data();
                     let caseId = doc.id;
 
                     // আদেশের তারিখ ও শেষ আদেশের অবস্থা পাওয়ার জন্য সাব-কালেকশন আনা
                     let orderSnap = await db.collection('cases').doc(caseId).collection('orders').orderBy('createdAt', 'desc').limit(1).get();
-                    let lastOrderDate = caseData.filingDate || '';
+                    let lastOrderDate = '';
                     let decisionStatus = "চলমান/প্রক্রিয়াধীন";
 
                     if (!orderSnap.empty) {
                         let lastOrder = orderSnap.docs[0].data();
-                        if (lastOrder.orderDate) lastOrderDate = lastOrder.orderDate;
-
+                        
+                        // 🔒 নতুন পরিবর্তন: চূড়ান্ত নিষ্পত্তি (resolved) না হলে রেজিস্টার ১৩ তে আদেশের তারিখ দেখানো হবে না।
                         if (caseData.status === 'resolved') {
+                            if (lastOrder.orderDate) lastOrderDate = lastOrder.orderDate;
+
                             const text = lastOrder.orderText || '';
                             if (text.includes('না-মঞ্জুর') || text.includes('নামঞ্জুর')) {
                                 decisionStatus = 'আবেদন নামঞ্জুর';
@@ -1031,7 +1042,7 @@
                         }
                     }
 
-                    casesList.push({
+                    reg13CasesList.push({
                         id: caseId,
                         caseNo: caseData.caseNo || '',
                         subject: caseData.subject || '',
@@ -1041,7 +1052,7 @@
                 }
 
                 // 🔢 কাস্টম শর্টিং: ২৫-২৬ আগে, তারপর ২৬-২৭; এবং ছোট থেকে বড় মামলা সংখ্যা
-                casesList.sort((a, b) => {
+                reg13CasesList.sort((a, b) => {
                     let parseCase = (caseNoStr) => {
                         let engNo = toEnglishNum(caseNoStr);
                         let match = engNo.match(/(\d+)\s*[\/\-]?\s*(\d{2}-\d{2})/);
@@ -1069,46 +1080,82 @@
                     return pA.num - pB.num; // ছোট থেকে বড়
                 });
 
-                tbody.innerHTML = '';
+                // প্রিন্ট ভিউ আপডেট
+                const printTbody = document.getElementById('print-register13-body');
                 let printRows = '';
-
-                casesList.forEach((item, idx) => {
-                    let bngSl = toBanglaNum(idx + 1);
-                    let bngCaseNo = toBanglaNum(item.caseNo);
-                    let bngSubject = toBanglaNum(item.subject);
-                    let formattedDate = formatBanglaDate(item.orderDate);
-
-                    let statusClass = item.decisionStatus === 'আবেদন মঞ্জুর' 
-                        ? 'text-emerald-700 font-bold' 
-                        : (item.decisionStatus === 'আবেদন নামঞ্জুর' ? 'text-red-600 font-bold' : 'text-slate-600');
-
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b hover:bg-slate-50";
-                    tr.innerHTML = `
-                        <td class="p-3 border text-center font-bold">${bngSl}</td>
-                        <td class="p-3 border font-semibold text-emerald-800">${bngCaseNo}</td>
-                        <td class="p-3 border">${bngSubject}</td>
-                        <td class="p-3 border text-center ${statusClass}">${item.decisionStatus}</td>
-                        <td class="p-3 border text-center">${formattedDate}</td>
-                    `;
-                    tbody.appendChild(tr);
-
+                reg13CasesList.forEach((item, idx) => {
                     printRows += `
                         <tr>
-                            <td class="border border-slate-400 p-2 text-center font-bold">${bngSl}</td>
-                            <td class="border border-slate-400 p-2 font-bold text-center">${bngCaseNo}</td>
-                            <td class="border border-slate-400 p-2">${bngSubject}</td>
+                            <td class="border border-slate-400 p-2 text-center font-bold">${toBanglaNum(idx + 1)}</td>
+                            <td class="border border-slate-400 p-2 font-bold text-center">${toBanglaNum(item.caseNo)}</td>
+                            <td class="border border-slate-400 p-2">${toBanglaNum(item.subject)}</td>
                             <td class="border border-slate-400 p-2 text-center">${item.decisionStatus}</td>
-                            <td class="border border-slate-400 p-2 text-center">${formattedDate}</td>
+                            <td class="border border-slate-400 p-2 text-center">${formatBanglaDate(item.orderDate)}</td>
                         </tr>
                     `;
                 });
-
                 printTbody.innerHTML = printRows;
+
+                reg13CurrentPage = 1;
+                renderPaginatedRegister13();
 
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600">ত্রুটি: ${err.message}</td></tr>`;
             }
+        }
+
+        // 🔢 রেজিস্টার ১৩ পেজিনেশন রেন্ডারিং
+        function renderPaginatedRegister13() {
+            const tbody = document.getElementById('register13-table-body');
+
+            if (reg13CasesList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">কোনো মামলা পাওয়া যায়নি।</td></tr>';
+                document.getElementById('reg13-page-indicator').innerText = 'পৃষ্ঠা ০ এর ০';
+                document.getElementById('reg13-prev-page-btn').disabled = true;
+                document.getElementById('reg13-next-page-btn').disabled = true;
+                return;
+            }
+
+            const totalPages = Math.ceil(reg13CasesList.length / pageSize);
+            if (reg13CurrentPage > totalPages) reg13CurrentPage = totalPages;
+            if (reg13CurrentPage < 1) reg13CurrentPage = 1;
+
+            const startIndex = (reg13CurrentPage - 1) * pageSize;
+            const pageData = reg13CasesList.slice(startIndex, startIndex + pageSize);
+
+            tbody.innerHTML = '';
+
+            pageData.forEach((item, idx) => {
+                let actualIdx = startIndex + idx;
+                let bngSl = toBanglaNum(actualIdx + 1);
+                let bngCaseNo = toBanglaNum(item.caseNo);
+                let bngSubject = toBanglaNum(item.subject);
+                let formattedDate = formatBanglaDate(item.orderDate);
+
+                let statusClass = item.decisionStatus === 'আবেদন মঞ্জুর' 
+                    ? 'text-emerald-700 font-bold' 
+                    : (item.decisionStatus === 'আবেদন নামঞ্জুর' ? 'text-red-600 font-bold' : 'text-slate-600');
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-3 border text-center font-bold">${bngSl}</td>
+                    <td class="p-3 border font-semibold text-emerald-800">${bngCaseNo}</td>
+                    <td class="p-3 border">${bngSubject}</td>
+                    <td class="p-3 border text-center ${statusClass}">${item.decisionStatus}</td>
+                    <td class="p-3 border text-center">${formattedDate}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('reg13-page-indicator').innerText = `পৃষ্ঠা ${toBanglaNum(reg13CurrentPage)} এর ${toBanglaNum(totalPages)}`;
+            document.getElementById('reg13-prev-page-btn').disabled = (reg13CurrentPage === 1);
+            document.getElementById('reg13-next-page-btn').disabled = (reg13CurrentPage === totalPages);
+        }
+
+        function changeReg13Page(direction) {
+            reg13CurrentPage += direction;
+            renderPaginatedRegister13();
         }
 
         function printRegister13() {
