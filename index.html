@@ -846,7 +846,7 @@
             } catch (error) {
                 errorDiv.innerText = "ইমেইল অথবা পাসওয়ার্ড ভুল দিয়েছেন!";
                 errorDiv.classList.remove('hidden');
-            } font-semibold {
+            } finally {
                 submitBtn.innerText = "লগইন করুন";
                 submitBtn.disabled = false;
             }
@@ -1238,11 +1238,7 @@
 
                 const fileObj = await convertFileToBase64(fileInput);
 
-                // পেশকারের সেভ এবং ট্রান্সফারের জন্য Batch ব্যবহার
-                const batch = db.batch();
-                
-                const noteRef = db.collection('cases').doc(caseId).collection('orders').doc();
-                batch.set(noteRef, {
+                await db.collection('cases').doc(caseId).collection('orders').add({
                     type: 'peshkar_note',
                     orderDate: peshkarOrderDate,
                     orderText: noteText,
@@ -1250,10 +1246,7 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                const caseRef = db.collection('cases').doc(caseId);
-                batch.update(caseRef, { status: 'judge_review' });
-
-                await batch.commit();
+                await db.collection('cases').doc(caseId).update({ status: 'judge_review' });
 
                 document.getElementById('peshkar-hearing-note').value = '';
                 document.getElementById('peshkar-hearing-file').value = '';
@@ -1658,9 +1651,6 @@
             }
         }
 
-        // ==========================================
-        // ⚖️ আদেশের ডাটা সেভ ও কেস স্ট্যাটাস আপডেট (BATCH TRANSACTION)
-        // ==========================================
         async function submitOrder(e) {
             e.preventDefault();
             const submitBtn = document.getElementById('judge-submit-btn');
@@ -1691,40 +1681,28 @@
 
                 const fileObj = await convertFileToBase64(fileInput);
 
-                // 🔒 Firestore Batch Commit: আদেশের ডাটা সেভ এবং স্ট্যাটাস ট্রান্সফার একই সাথে সম্পন্ন হবে
-                const batch = db.batch();
-
-                // ১. আদেশের ডাটা রেফারেন্স ও আপডেট
-                const newOrderRef = db.collection('cases').doc(caseId).collection('orders').doc();
-                batch.set(newOrderRef, {
+                await db.collection('cases').doc(caseId).collection('orders').add({
                     type: 'judge_order',
-                    orderDate, 
-                    nextDate: isFinal ? null : nextDate, 
-                    orderText,
+                    orderDate, nextDate, orderText,
                     file: fileObj,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // ২. মামলার বর্তমান অবস্থা (Status) ও পরবর্তী শুনানির তারিখ আপডেট
-                const caseRef = db.collection('cases').doc(caseId);
                 if (isFinal) {
-                    batch.update(caseRef, { status: 'resolved', nextDate: null });
+                    await db.collection('cases').doc(caseId).update({ status: 'resolved', nextDate: null });
                 } else {
-                    batch.update(caseRef, { status: 'peshkar_pending', nextDate: nextDate });
+                    await db.collection('cases').doc(caseId).update({ status: 'peshkar_pending', nextDate: nextDate });
                 }
-
-                // ৩. এক সাথে ব্যাচ প্রসেস সম্পাদন (এতে করে নেটওয়ার্ক এরর হলে দুটোই বাতলি হবে, ডাটা মিসম্যাচ হবে না)
-                await batch.commit();
 
                 document.getElementById('order-text').value = '';
                 document.getElementById('next-date').value = '';
                 document.getElementById('judge-order-file').value = '';
                 document.getElementById('order-template-select').value = '';
-                alert("আদেশ সংরক্ষণ ও সফলভাবে পেশকারের নিকট ট্রান্সফার করা হয়েছে।");
+                alert("আদেশ সংরক্ষণ হয়েছে।");
 
                 loadCaseDetailsByUrl(caseId);
             } catch(err) {
-                alert("আদেশ সেভ বা ট্রান্সফার করতে সমস্যা হয়েছে: " + err.message);
+                alert("আদেশ দিতে সমস্যা: " + err.message);
             } finally {
                 submitBtn.innerText = "আদেশ প্রদান করুন ও পেশকারের নিকট পাঠান";
                 submitBtn.disabled = false;
