@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>বিবিধ মোকদ্দমা ব্যবস্থাপনা - সহকারী কমিশনার (ভূমি)</title>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -94,13 +97,6 @@
                 <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-2 rounded-lg font-semibold text-sm transition">লগইন করুন</button>
             </form>
 
-            <div class="mt-4 pt-3 border-t text-center space-y-2">
-                <p class="text-xs text-slate-400">অথবা দ্রুত টেস্ট ডেমো মোডে প্রবেশ করুন:</p>
-                <div class="flex gap-2 justify-center">
-                    <button type="button" onclick="loginAsDemo('peshkar')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs transition">👨‍💼 পেশকার ডেমো</button>
-                    <button type="button" onclick="loginAsDemo('judge')" class="bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-1.5 rounded text-xs transition">⚖️ বিচারক ডেমো</button>
-                </div>
-            </div>
 
             <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
         </section>
@@ -234,7 +230,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
                     <h2 class="text-lg font-bold text-slate-800">সকল চলমান বিবিধ মোকদ্দমাসমূহ</h2>
                     <div class="relative w-full sm:w-72">
-                        <input type="text" id="case-search-input" onkeyup="filterCaseList()" placeholder="🔍 মামলা নং বা নাম দিয়ে খুঁজুন..." class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <input type="text" id="case-search-input" oninput="filterCaseListDebounced()" placeholder="🔍 মামলা নং বা নাম দিয়ে খুঁজুন..." class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
                     </div>
                 </div>
 
@@ -514,6 +510,7 @@
                     <p class="text-[11px] font-bold">আদেশপত্র</p>
                     <p class="text-[10px] italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
                     <p class="text-[10px]">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                    <p class="text-[10px]" id="endors-print-case-year-range"></p>
                 </div>
                 
                 <!-- মামলার তথ্য বক্স -->
@@ -551,7 +548,7 @@
                                     </div>
                                     <div class="flex justify-between items-baseline font-normal pt-0.5">
                                         <p>স্মারক নং-৩১.৪২.১২০৪.০০০.১৬.০০২.২৬.</p>
-                                        <p>তারিখ:</p>
+                                        <p>তারিখ: .............................................</p>
                                     </div>
                                     <div class="pt-1 space-y-0.5 font-normal">
                                         <p class="font-bold">অনুলিপি:</p>
@@ -710,8 +707,95 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
+        // ধীর/অস্থির নেটওয়ার্কে সংযোগ স্বয়ংক্রিয়ভাবে long-polling এ নামবে (ডাটা লোড না হওয়া কমাবে)
+        try {
+            db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+        } catch (e) { console.warn('settings:', e); }
+
+        // অফলাইন ক্যাশ: দ্বিতীয়বার থেকে ডাটা প্রায় সঙ্গে সঙ্গে দেখা যাবে
+        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+            console.warn('persistence চালু হয়নি:', err.code);
+        });
+
         let currentUser = null;
         let currentSelectedCase = null;
+        let currentOrdersRaw = [];
+        let currentOrdersCaseId = null;          // বর্তমান মামলার আদেশ ক্যাশ
+        let casesUnsubscribe = null;        // একটি মাত্র শেয়ার্ড লিসনার
+        let casesLoaded = false;
+        const reg13OrderCache = new Map();  // caseId -> {orderDate, decisionStatus}
+
+        function debounce(fn, ms = 250) {
+            let t;
+            return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+        }
+
+        function getDecisionFromText(text) {
+            text = text || '';
+            if (text.includes('না-মঞ্জুর') || text.includes('নামঞ্জুর')) return 'আবেদন নামঞ্জুর';
+            if (text.includes('মঞ্জুর')) return 'আবেদন মঞ্জুর';
+            return 'নিষ্পত্তিকৃত';
+        }
+
+        function caseCreatedMs(c) {
+            const ts = c.createdAt;
+            if (!ts) return Number.MAX_SAFE_INTEGER; // সদ্য তৈরি (সার্ভার টাইমস্ট্যাম্প আসেনি) — সবার উপরে
+            return ts.toMillis ? ts.toMillis() : 0;
+        }
+
+        // সব মামলার জন্য একটিই রিয়েলটাইম লিসনার — স্ট্যাটস, তালিকা, কজ লিস্ট, রেজিস্টার ১৩ সবাই এটি থেকে পড়বে
+        function startCasesListener() {
+            if (casesUnsubscribe) return;
+            casesUnsubscribe = db.collection('cases').onSnapshot(snapshot => {
+                allCasesList = [];
+                snapshot.forEach(doc => allCasesList.push({ id: doc.id, ...doc.data() }));
+                allCasesList.sort((a, b) => caseCreatedMs(b) - caseCreatedMs(a));
+                casesLoaded = true;
+                updateJudgeStats();
+                refreshActivePage();
+            }, error => {
+                console.error('cases listener:', error);
+                casesUnsubscribe = null;
+                const msg = `<tr><td colspan="6" class="p-4 text-center text-red-600 font-semibold">ডাটা লোড হয়নি (${error.code || error.message})। <button onclick="retryLoad()" class="underline">আবার চেষ্টা করুন</button></td></tr>`;
+                ['case-list-body', 'cause-list-table-body', 'register13-table-body'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = msg;
+                });
+            });
+        }
+
+        function stopCasesListener() {
+            if (casesUnsubscribe) { casesUnsubscribe(); casesUnsubscribe = null; }
+            casesLoaded = false;
+        }
+
+        function retryLoad() {
+            stopCasesListener();
+            startCasesListener();
+        }
+
+        function updateJudgeStats() {
+            if (!currentUser || currentUser.role !== 'judge') return;
+            let judgePending = 0, peshkarPending = 0, resolved = 0;
+            allCasesList.forEach(c => {
+                if (c.status === 'judge_review') judgePending++;
+                else if (c.status === 'peshkar_pending') peshkarPending++;
+                else if (c.status === 'resolved') resolved++;
+            });
+            document.getElementById('stat-total-cases').innerText = toBanglaNum(allCasesList.length);
+            document.getElementById('stat-judge-pending').innerText = toBanglaNum(judgePending);
+            document.getElementById('stat-peshkar-pending').innerText = toBanglaNum(peshkarPending);
+            document.getElementById('stat-resolved-cases').innerText = toBanglaNum(resolved);
+        }
+
+        // ডাটা বদলালে যে পেজ খোলা আছে শুধু সেটিই রিফ্রেশ হবে
+        function refreshActivePage() {
+            if (!currentUser) return;
+            const path = (window.location.hash.replace('#', '') || 'causelist').split('?')[0];
+            if (path === 'cases') { renderPaginatedCases(); }
+            else if (path === 'causelist') { fetchCauseList(); }
+            else if (path === 'register13') { fetchRegister13(); }
+        }
 
         let allCasesList = [];
         let reg13CasesList = [];
@@ -817,15 +901,6 @@
             });
         }
 
-        function loginAsDemo(role) {
-            currentUser = {
-                uid: 'demo-' + role,
-                email: role + '@demo.local',
-                role: role,
-                name: role === 'judge' ? 'সহকারী কমিশনার (ভূমি) [ডেমো]' : 'পেশকার [ডেমো]'
-            };
-            applyUserUI();
-        }
 
         function applyUserUI() {
             document.getElementById('auth-section').classList.add('hidden');
@@ -836,55 +911,70 @@
             if (currentUser.role === 'judge') {
                 document.getElementById('judge-dashboard-stats').classList.remove('hidden');
                 document.getElementById('nav-case-entry').classList.add('hidden');
-                loadJudgeDashboardStats();
+                updateJudgeStats();
             } else {
                 document.getElementById('judge-dashboard-stats').classList.add('hidden');
                 document.getElementById('nav-case-entry').classList.remove('hidden');
             }
 
+            startCasesListener();
             handleRouting();
         }
 
-        function loadJudgeDashboardStats() {
-            db.collection('cases').onSnapshot(snapshot => {
-                let total = snapshot.size;
-                let judgePending = 0;
-                let peshkarPending = 0;
-                let resolved = 0;
-
-                snapshot.forEach(doc => {
-                    let st = doc.data().status;
-                    if (st === 'judge_review') judgePending++;
-                    else if (st === 'peshkar_pending') peshkarPending++;
-                    else if (st === 'resolved') resolved++;
-                });
-
-                document.getElementById('stat-total-cases').innerText = toBanglaNum(total);
-                document.getElementById('stat-judge-pending').innerText = toBanglaNum(judgePending);
-                document.getElementById('stat-peshkar-pending').innerText = toBanglaNum(peshkarPending);
-                document.getElementById('stat-resolved-cases').innerText = toBanglaNum(resolved);
-            });
+        function resolveRole(user, userDocData) {
+            let role = 'peshkar';
+            let name = 'পেশকার';
+            if (userDocData) {
+                role = userDocData.role || 'peshkar';
+                name = userDocData.name || (role === 'judge' ? 'সহকারী কমিশনার (ভূমি)' : 'পেশকার');
+            } else if (user.email && user.email.includes('acland')) {
+                role = 'judge';
+                name = 'সহকারী কমিশনার (ভূমি)';
+            }
+            return { role, name };
         }
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                try {
-                    const userDoc = await db.collection('users').doc(user.uid).get();
-                    let role = 'peshkar';
-                    let name = 'পেশকার';
-
-                    if (userDoc.exists) {
-                        role = userDoc.data().role || 'peshkar';
-                        name = userDoc.data().name || (role === 'judge' ? 'সহকারী কমিশনার (ভূমি)' : 'পেশকার');
-                    } else if (user.email && user.email.includes('acland')) {
-                        role = 'judge';
-                        name = 'সহকারী কমিশনার (ভূমি)';
-                    }
-
-                    currentUser = { uid: user.uid, email: user.email, role, name };
+                // ১) আগে ক্যাশ করা রোল দিয়ে সঙ্গে সঙ্গে UI দেখানো (ব্যবহারকারীকে অপেক্ষা করতে হবে না)
+                let cached = null;
+                try { cached = JSON.parse(localStorage.getItem('role-' + user.uid) || 'null'); } catch (e) {}
+                if (cached && cached.role) {
+                    currentUser = { uid: user.uid, email: user.email, role: cached.role, name: cached.name };
                     applyUserUI();
+                }
+
+                // ২) ব্যাকগ্রাউন্ডে সার্ভার থেকে যাচাই; আটকে গেলেও অ্যাপ চলবে
+                try {
+                    const userDocPromise = db.collection('users').doc(user.uid).get();
+                    if (!currentUser) {
+                        // ক্যাশ নেই (প্রথম লগইন): ৬ সেকেন্ডে সাড়া না এলে সাময়িক রোল দিয়ে অ্যাপ খুলে দেওয়া হবে,
+                        // আসল রোল এলে নিজে থেকে ঠিক হয়ে যাবে — লগইন স্ক্রিনে আটকে থাকবে না
+                        const quick = await Promise.race([
+                            userDocPromise.then(() => 'ok', () => 'err'),
+                            new Promise(r => setTimeout(() => r('slow'), 6000))
+                        ]);
+                        if (quick !== 'ok') {
+                            const tmp = resolveRole(user, null);
+                            currentUser = { uid: user.uid, email: user.email, role: tmp.role, name: tmp.name };
+                            applyUserUI();
+                        }
+                    }
+                    const userDoc = await userDocPromise;
+                    const { role, name } = resolveRole(user, userDoc.exists ? userDoc.data() : null);
+                    try { localStorage.setItem('role-' + user.uid, JSON.stringify({ role, name })); } catch (e) {}
+
+                    const changed = !currentUser || currentUser.role !== role || currentUser.name !== name;
+                    currentUser = { uid: user.uid, email: user.email, role, name };
+                    if (changed) applyUserUI();
                 } catch (err) {
                     console.error("প্রোফাইল লোড ত্রুটি:", err);
+                    if (!currentUser) {
+                        // প্রোফাইল না পেলেও অ্যাপ যেন ফাঁকা বসে না থাকে
+                        const { role, name } = resolveRole(user, null);
+                        currentUser = { uid: user.uid, email: user.email, role, name };
+                        applyUserUI();
+                    }
                 }
             } else if (!currentUser) {
                 showPage('auth-section');
@@ -905,9 +995,29 @@
             submitBtn.disabled = true;
 
             try {
-                await auth.signInWithEmailAndPassword(emailInput, passwordInput);
+                // ১৫ সেকেন্ডে সাড়া না এলে চিরকাল ঝুলে না থেকে কারণ দেখাবে
+                await Promise.race([
+                    auth.signInWithEmailAndPassword(emailInput, passwordInput),
+                    new Promise((_, reject) => setTimeout(() => reject({ code: 'app/timeout' }), 15000))
+                ]);
             } catch (error) {
-                errorDiv.innerText = "ইমেইল অথবা পাসওয়ার্ড ভুল দিয়েছেন!";
+                console.error('লগইন ত্রুটি:', error);
+                const code = (error && error.code) || '';
+                let msg;
+                if (code === 'app/timeout' || code === 'auth/network-request-failed') {
+                    msg = "ইন্টারনেট সংযোগ দুর্বল বা সার্ভারে পৌঁছানো যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।";
+                } else if (code === 'auth/too-many-requests') {
+                    msg = "অনেকবার ভুল চেষ্টা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।";
+                } else if (code === 'auth/invalid-email') {
+                    msg = "ইমেইল ঠিকানাটি সঠিক নয়।";
+                } else if (code === 'auth/user-disabled') {
+                    msg = "এই অ্যাকাউন্টটি নিষ্ক্রিয় করা আছে।";
+                } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials') {
+                    msg = "ইমেইল অথবা পাসওয়ার্ড ভুল দিয়েছেন!";
+                } else {
+                    msg = "লগইন করা যায়নি (" + (code || (error && error.message) || 'অজানা ত্রুটি') + ")";
+                }
+                errorDiv.innerText = msg;
                 errorDiv.classList.remove('hidden');
             } finally {
                 submitBtn.innerText = "লগইন করুন";
@@ -943,14 +1053,13 @@
                 const searchEng = toEnglishNum(rawSearchNo);
                 const searchBng = toBanglaNum(rawSearchNo);
 
-                const snapshot = await db.collection('cases').get();
+                // সব মামলা ডাউনলোড না করে শুধু মিলে যাওয়া নম্বর খোঁজা হচ্ছে
+                const variants = [...new Set([rawSearchNo, searchEng, searchBng])];
+                const snapshot = await db.collection('cases').where('caseNo', 'in', variants).limit(5).get();
                 let matchedDoc = null;
 
                 snapshot.forEach(doc => {
-                    const cNo = doc.data().caseNo || '';
-                    if (toEnglishNum(cNo) === searchEng || toBanglaNum(cNo) === searchBng) {
-                        matchedDoc = doc;
-                    }
+                    if (!matchedDoc) matchedDoc = doc;
                 });
 
                 if (!matchedDoc) {
@@ -1004,11 +1113,15 @@
             
             if(!selectedDate) return;
 
-            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-600">ডাটা লোড হচ্ছে...</td></tr>';
+            if (!casesLoaded) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-600">ডাটা লোড হচ্ছে...</td></tr>';
+                return; // লিসনার ডাটা আনলে স্বয়ংক্রিয়ভাবে আবার রেন্ডার হবে
+            }
             printTbody.innerHTML = '';
 
             try {
-                const snapshot = await db.collection('cases').where('nextDate', '==', selectedDate).get();
+                const matched = allCasesList.filter(c => c.nextDate === selectedDate);
+                const snapshot = { empty: matched.length === 0, forEach: fn => matched.forEach(c => fn({ id: c.id, data: () => c })) };
                 const banglaDateStr = formatBanglaDate(selectedDate);
                 
                 if (snapshot.empty) {
@@ -1065,49 +1178,61 @@
 
         async function fetchRegister13() {
             const tbody = document.getElementById('register13-table-body');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড ও শর্টিং হচ্ছে...</td></tr>';
+            if (!casesLoaded) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
+                return; // লিসনার ডাটা আনলে স্বয়ংক্রিয়ভাবে আবার রেন্ডার হবে
+            }
 
             try {
-                const snapshot = await db.collection('cases').get();
-                if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">কোনো মামলা পাওয়া যায়নি।</td></tr>';
+                if (allCasesList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">কোনো মামলা পাওয়া যায়নি।</td></tr>';
                     return;
                 }
 
-                reg13CasesList = [];
-                for (let doc of snapshot.docs) {
-                    let caseData = doc.data();
-                    let caseId = doc.id;
+                // শুধু নিষ্পত্তিকৃত মামলার শেষ আদেশ লাগে। নতুন নিষ্পত্তিতে তথ্য কেস ডকুমেন্টেই থাকে (resolvedDate/decision)।
+                // পুরনো মামলার জন্য একবার সমান্তরালে আনা হবে, তারপর ক্যাশ (ও বিচারক হলে ব্যাকফিল)।
+                const missing = allCasesList.filter(c =>
+                    c.status === 'resolved' && !(c.decision && c.resolvedDate) && !reg13OrderCache.has(c.id));
 
-                    let orderSnap = await db.collection('cases').doc(caseId).collection('orders').orderBy('createdAt', 'desc').limit(1).get();
-                    let lastOrderDate = '';
-                    let decisionStatus = "চলমান/প্রক্রিয়াধীন";
-
-                    if (!orderSnap.empty) {
-                        let lastOrder = orderSnap.docs[0].data();
-                        
-                        if (caseData.status === 'resolved') {
-                            if (lastOrder.orderDate) lastOrderDate = lastOrder.orderDate;
-
-                            const text = lastOrder.orderText || '';
-                            if (text.includes('না-মঞ্জুর') || text.includes('নামঞ্জুর')) {
-                                decisionStatus = 'আবেদন নামঞ্জুর';
-                            } else if (text.includes('মঞ্জুর')) {
-                                decisionStatus = 'আবেদন মঞ্জুর';
+                if (missing.length > 0) {
+                    await Promise.all(missing.map(async c => {
+                        try {
+                            const snap = await db.collection('cases').doc(c.id).collection('orders')
+                                .orderBy('createdAt', 'desc').limit(1).get();
+                            if (!snap.empty) {
+                                const last = snap.docs[0].data();
+                                const info = { orderDate: last.orderDate || '', decisionStatus: getDecisionFromText(last.orderText) };
+                                reg13OrderCache.set(c.id, info);
+                                if (currentUser && currentUser.role === 'judge') {
+                                    db.collection('cases').doc(c.id)
+                                        .update({ resolvedDate: info.orderDate, decision: info.decisionStatus }).catch(() => {});
+                                }
                             } else {
-                                decisionStatus = 'নিষ্পত্তিকৃত';
+                                reg13OrderCache.set(c.id, { orderDate: '', decisionStatus: 'নিষ্পত্তিকৃত' });
                             }
+                        } catch (e) {
+                            reg13OrderCache.set(c.id, { orderDate: '', decisionStatus: 'নিষ্পত্তিকৃত' });
+                        }
+                    }));
+                }
+
+                reg13CasesList = allCasesList.map(c => {
+                    let lastOrderDate = '';
+                    let decisionStatus = 'চলমান/প্রক্রিয়াধীন';
+                    if (c.status === 'resolved') {
+                        if (c.decision && c.resolvedDate) {
+                            decisionStatus = c.decision;
+                            lastOrderDate = c.resolvedDate;
+                        } else if (reg13OrderCache.has(c.id)) {
+                            const info = reg13OrderCache.get(c.id);
+                            decisionStatus = info.decisionStatus;
+                            lastOrderDate = info.orderDate;
+                        } else {
+                            decisionStatus = 'নিষ্পত্তিকৃত';
                         }
                     }
-
-                    reg13CasesList.push({
-                        id: caseId,
-                        caseNo: caseData.caseNo || '',
-                        subject: caseData.subject || '',
-                        decisionStatus: decisionStatus,
-                        orderDate: lastOrderDate
-                    });
-                }
+                    return { id: c.id, caseNo: c.caseNo || '', subject: c.subject || '', decisionStatus, orderDate: lastOrderDate };
+                });
 
                 reg13CasesList.sort((a, b) => {
                     let parseCase = (caseNoStr) => {
@@ -1151,7 +1276,6 @@
                 });
                 printTbody.innerHTML = printRows;
 
-                reg13CurrentPage = 1;
                 renderPaginatedRegister13();
 
             } catch (err) {
@@ -1317,19 +1441,13 @@
 
         function loadCases() {
             const tbody = document.getElementById('case-list-body');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
-
-            db.collection('cases').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-                allCasesList = [];
-                snapshot.forEach(doc => {
-                    allCasesList.push({ id: doc.id, ...doc.data() });
-                });
-
-                currentPage = 1;
-                filterCaseList();
-            }, error => {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600 font-semibold">ত্রুটি: ${error.message}</td></tr>`;
-            });
+            currentPage = 1;
+            if (!casesLoaded) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
+                startCasesListener();
+                return; // ডাটা এলে লিসনার নিজেই রেন্ডার করবে
+            }
+            renderPaginatedCases();
         }
 
         function getFilteredCases() {
@@ -1352,6 +1470,8 @@
                 return searchStr.includes(filterRaw) || searchStr.includes(filterBng) || searchEng.includes(filterEng);
             });
         }
+
+        const filterCaseListDebounced = debounce(() => filterCaseList(), 250);
 
         function filterCaseList() {
             currentPage = 1;
@@ -1417,13 +1537,18 @@
         }
 
         async function loadCaseDetailsByUrl(caseId) {
-            const doc = await db.collection('cases').doc(caseId).get();
-            if (!doc.exists) {
-                alert("মামলাটি পাওয়া যায়নি বা মুছে ফেলা হয়েছে।");
-                navigateTo('cases');
-                return;
+            const cached = allCasesList.find(c => c.id === caseId);
+            if (cached) {
+                currentSelectedCase = { ...cached }; // লিসনার থেকে তাৎক্ষণিক — আলাদা নেটওয়ার্ক কল নয়
+            } else {
+                const doc = await db.collection('cases').doc(caseId).get();
+                if (!doc.exists) {
+                    alert("মামলাটি পাওয়া যায়নি বা মুছে ফেলা হয়েছে।");
+                    navigateTo('cases');
+                    return;
+                }
+                currentSelectedCase = { id: doc.id, ...doc.data() };
             }
-            currentSelectedCase = { id: doc.id, ...doc.data() };
 
             document.getElementById('details-case-no-header').innerText = `মামলা নং: ${toBanglaNum(currentSelectedCase.caseNo)}`;
 
@@ -1459,16 +1584,23 @@
             const historyDiv = document.getElementById('order-history');
             historyDiv.innerHTML = 'লোড হচ্ছে...';
 
-            const snapshot = await db.collection('cases').doc(caseId).collection('orders').get();
             let rawList = [];
-            snapshot.forEach(doc => rawList.push({ id: doc.id, ...doc.data() }));
+            try {
+                const snapshot = await db.collection('cases').doc(caseId).collection('orders').get();
+                snapshot.forEach(doc => rawList.push({ id: doc.id, ...doc.data() }));
+            } catch (err) {
+                historyDiv.innerHTML = `<p class="text-red-600">আদেশ লোড হয়নি (${err.code || err.message})। <button onclick="loadOrders('${caseId}')" class="underline">আবার চেষ্টা করুন</button></p>`;
+                return;
+            }
 
             rawList.sort((a, b) => {
                 const dateA = new Date(a.orderDate);
                 const dateB = new Date(b.orderDate);
                 if (dateA - dateB !== 0) return dateA - dateB;
-                return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+                return (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0);
             });
+            currentOrdersRaw = rawList;
+            currentOrdersCaseId = caseId;
 
             const isResolved = currentSelectedCase && currentSelectedCase.status === 'resolved';
             const peshkarEndorsBtn = document.getElementById('peshkar-endors-btn');
@@ -1611,7 +1743,9 @@
             }
 
             if (currentSelectedCase) {
-                document.getElementById('print-case-year-range').innerText = `আদেশপত্র, তারিখ: ${firstDateStr} হইতে ${lastDateStr} পর্যন্ত।`;
+                const yearRangeStr = `আদেশপত্র, তারিখ: ${firstDateStr} হইতে ${lastDateStr} পর্যন্ত।`;
+                document.getElementById('print-case-year-range').innerText = yearRangeStr;
+                document.getElementById('endors-print-case-year-range').innerText = yearRangeStr;
                 document.getElementById('print-case-no').innerText = toBanglaNum(currentSelectedCase.caseNo);
                 document.getElementById('print-plaintiff').innerText = toBanglaNum(currentSelectedCase.plaintiff);
                 document.getElementById('print-defendant').innerText = toBanglaNum(currentSelectedCase.defendant);
@@ -1706,6 +1840,13 @@
                     caseUpdatePayload.nextDate = updatedNextDate;
                 }
 
+                if (currentSelectedCase && currentSelectedCase.status === 'resolved' && entryType === 'judge_order'
+                    && currentOrdersRaw.length && currentOrdersRaw[currentOrdersRaw.length - 1].id === entryId) {
+                    caseUpdatePayload.resolvedDate = updatedDate;
+                    caseUpdatePayload.decision = getDecisionFromText(updatedText);
+                    reg13OrderCache.delete(caseId);
+                }
+
                 await db.collection('cases').doc(caseId).update(caseUpdatePayload);
 
                 alert("মামলার তথ্য সফলভাবে আপডেট করা হয়েছে।");
@@ -1755,7 +1896,12 @@
                 });
 
                 if (isFinal) {
-                    await db.collection('cases').doc(caseId).update({ status: 'resolved', nextDate: null });
+                    await db.collection('cases').doc(caseId).update({
+                        status: 'resolved', nextDate: null,
+                        resolvedDate: orderDate,
+                        decision: getDecisionFromText(orderText)
+                    });
+                    reg13OrderCache.delete(caseId);
                 } else {
                     await db.collection('cases').doc(caseId).update({ status: 'peshkar_pending', nextDate: nextDate });
                 }
@@ -1843,9 +1989,13 @@
             }
 
             try {
-                const snapshot = await db.collection('cases').doc(currentSelectedCase.id).collection('orders').get();
                 let rawList = [];
-                snapshot.forEach(doc => rawList.push({ id: doc.id, ...doc.data() }));
+                if (currentOrdersCaseId === currentSelectedCase.id && currentOrdersRaw.length > 0) {
+                    rawList = currentOrdersRaw.slice(); // ইতিমধ্যে লোড করা আদেশ — আবার ডাউনলোড নয়
+                } else {
+                    const snapshot = await db.collection('cases').doc(currentSelectedCase.id).collection('orders').get();
+                    snapshot.forEach(doc => rawList.push({ id: doc.id, ...doc.data() }));
+                }
 
                 if (rawList.length === 0) {
                     alert("এই মামলার কোনো শুনানি পাওয়া যায়নি।");
