@@ -7,8 +7,6 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.cdnfonts.com/css/nikosh');
-        
         @font-face {
             font-family: 'NikoshBan';
             src: url('https://raw.githubusercontent.com/mhozaifa/nikosh-font/master/NikoshBan.ttf') format('truetype');
@@ -22,13 +20,21 @@
             }
             .print-active, .print-active * { 
                 visibility: visible !important; 
-                font-family: 'NikoshBan', 'Nikosh', 'SolaimanLipi', sans-serif !important;
+                font-family: 'NikoshBan', 'SolaimanLipi', sans-serif !important;
             }
             .print-active { 
                 position: absolute !important; 
                 left: 0 !important; 
                 top: 0 !important; 
                 width: 100% !important; 
+                height: 100% !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            #printable-endorsement {
+                padding: 10px !important;
+                font-size: 11.5px !important;
+                line-height: 1.25 !important;
             }
             .no-print { display: none !important; }
         }
@@ -91,15 +97,15 @@
             <div class="mt-4 pt-3 border-t text-center space-y-2">
                 <p class="text-xs text-slate-400">অথবা দ্রুত টেস্ট ডেমো মোডে প্রবেশ করুন:</p>
                 <div class="flex gap-2 justify-center">
-                    <button onclick="loginAsDemo('peshkar')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs transition">👨‍💼 পেশকার ডেমো</button>
-                    <button onclick="loginAsDemo('judge')" class="bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-1.5 rounded text-xs transition">⚖️ বিচারক ডেমো</button>
+                    <button type="button" onclick="loginAsDemo('peshkar')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs transition">👨‍💼 পেশকার ডেমো</button>
+                    <button type="button" onclick="loginAsDemo('judge')" class="bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-1.5 rounded text-xs transition">⚖️ বিচারক ডেমো</button>
                 </div>
             </div>
 
             <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
         </section>
 
-        <!-- ৩. মূল ড্যাশবোর্ড নেভিগেশন বার (URL Changing Navigation Tabs) -->
+        <!-- ৩. মূল ড্যাশবোর্ড নেভিগেশন বার -->
         <div id="app-dashboard" class="hidden space-y-6">
 
             <!-- পেজ নেভিগেশন মেনু -->
@@ -178,7 +184,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">মৌজা ও খতিয়ান</label>
-                        <input type="text" id="case-location" placeholder="যেমন: छलিমাবাদ, খতিয়ান নং- ২২৯৮" required class="w-full border p-2 rounded text-sm">
+                        <input type="text" id="case-location" placeholder="যেমন: ছলিমাবাদ, খতিয়ান নং- ২২৯৮" required class="w-full border p-2 rounded text-sm">
                     </div>
                     
                     <div class="md:col-span-2 border p-3 rounded-lg bg-emerald-50/50">
@@ -331,6 +337,7 @@
                             <button type="submit" id="peshkar-submit-btn" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">নথি পেশ/উপস্থাপন সম্পন্ন করুন</button>
                             <button type="button" onclick="previewNoticeSheet()" class="bg-amber-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-amber-700">📩 শুনানীর নোটিশ প্রিন্ট করুন</button>
                             <button type="button" onclick="previewOrderSheet()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800">সম্পূর্ণ রায় / আদেশনামা দেখুন</button>
+                            <button id="peshkar-endors-btn" type="button" onclick="previewEndorsementSheet()" class="hidden bg-purple-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-purple-800">🖨️ এন্ডর্সমেন্ট প্রিন্ট</button>
                         </div>
                     </form>
                 </section>
@@ -396,6 +403,7 @@
                             <button id="judge-submit-btn" type="submit" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800 disabled:bg-slate-400 disabled:cursor-not-allowed">আদেশ প্রদান করুন ও পেশকারের নিকট পাঠান</button>
                             <button type="button" onclick="previewNoticeSheet()" class="bg-amber-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-amber-700">📩 শুনানীর নোটিশ প্রিন্ট করুন</button>
                             <button type="button" onclick="previewOrderSheet()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800">আদেশনামা প্রাকদর্শন / প্রিন্ট</button>
+                            <button id="judge-endors-btn" type="button" onclick="previewEndorsementSheet()" class="hidden bg-purple-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-purple-800">🖨️ এন্ডর্সমেন্ট প্রিন্ট</button>
                         </div>
                     </form>
                 </section>
@@ -498,6 +506,77 @@
                 </div>
             </section>
 
+            <!-- ৫. এন্ডর্সমেন্ট প্রিন্ট ফরম্যাট -->
+            <section id="printable-endorsement" class="hidden bg-white p-4 my-2 max-w-4xl mx-auto text-xs leading-snug text-black">
+                <!-- সরকারি ফরমের হেডার -->
+                <div class="mb-2 text-center leading-tight space-y-0">
+                    <p class="text-[10px] text-left mb-0.5">বাংলাদেশ ফরম নং- ২৭০</p>
+                    <p class="text-[11px] font-bold">আদেশপত্র</p>
+                    <p class="text-[10px] italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
+                    <p class="text-[10px]">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                </div>
+                
+                <!-- মামলার তথ্য বক্স -->
+                <div class="grid grid-cols-2 text-[11px] mb-2 border border-black p-1.5 leading-tight">
+                    <div><strong>মামলা নম্বর:</strong> <span id="endors-print-case-no" class="font-bold"></span></div>
+                    <div><strong>মামলার ধরণ:</strong> <span id="endors-print-subject"></span></div>
+                    <div><strong>বাদী/আবেদনকারী:</strong> <span id="endors-print-plaintiff"></span></div>
+                    <div><strong>বিবাদী/প্রতিপক্ষ:</strong> <span id="endors-print-defendant"></span></div>
+                </div>
+
+                <!-- মূল আদেশপত্র টেবিল -->
+                <table class="w-full border-collapse border border-black text-xs">
+                    <tbody>
+                        <tr>
+                            <td class="border border-black p-2 w-1/6 align-top text-center text-[11px]">
+                                <div class="font-bold mb-1 border-b border-black pb-0.5" id="endors-serial-no"></div>
+                                <div class="font-semibold" id="endors-date"></div>
+                            </td>
+                            <td class="border border-black p-3 w-4/6 align-top space-y-2 text-[11px]">
+                                <div class="space-y-1.5 text-justify leading-snug">
+                                    <div id="endors-peshkar-note" class="whitespace-pre-line font-normal"></div>
+                                    <div id="endors-judge-verdict" class="whitespace-pre-line font-normal space-y-1.5"></div>
+                                </div>
+                                <div class="pt-3 flex justify-end">
+                                    <div class="text-center leading-tight">
+                                        <p class="font-bold text-[11px]">মোঃ রবিউল হাসান ভূঁইয়া</p>
+                                        <p class="font-normal text-[10px]">সহকারী কমিশনার (ভূমি)</p>
+                                        <p class="font-normal text-[10px]">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                                    </div>
+                                </div>
+                                <div class="pt-2 space-y-1 text-[10px]">
+                                    <div class="space-y-0 font-normal">
+                                        <p>আমার কথিত মতে</p>
+                                        <p>টাইপকৃত ও সংশোধিত</p>
+                                    </div>
+                                    <div class="flex justify-between items-baseline font-normal pt-0.5">
+                                        <p>স্মারক নং-৩১.৪২.১২০৪.০০০.১৬.০০২.২৬.</p>
+                                        <p>তারিখ:</p>
+                                    </div>
+                                    <div class="pt-1 space-y-0.5 font-normal">
+                                        <p class="font-bold">অনুলিপি:</p>
+                                        <p class="pl-2">১। রেকর্ডরুম ডেপুটি কালেক্টর,ব্রাহ্মণবাড়িয়া। (প্রয়োজনীয় রেকর্ড সংশোধনের অনুরোধসহ)</p>
+                                        <p class="pl-2">২। কানুনগো / সার্ভেয়ার , অত্রাফিস। (প্রয়োজনীয় রেকর্ড সংশোধনের জন্য)</p>
+                                        <p class="pl-2">৩। ইউনিয়ন ভুমি সহকারী কর্মকর্তা, বিষ্ণুরামপুর (প্রয়োজনীয় রেকর্ড সংশোধনের জন্য)</p>
+                                        <p class="pl-2">৪। জনাব........................................................অবগতির জন্য।</p>
+                                        <p class="pl-2">৫। অফিস কপি</p>
+                                    </div>
+                                    <div class="pt-4 flex justify-end">
+                                        <div class="text-center leading-tight">
+                                            <p class="font-normal text-[10px]">সহকারী কমিশনার (ভূমি)</p>
+                                            <p class="font-normal text-[10px]">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="border border-black p-2 w-1/6 align-top text-center font-normal text-[10px]" id="endors-action-taken">
+                                ইউনিয়ন ভূমি সহকারী কর্মকর্তাকে রেকর্ড সংশোধনের জন্য আদেশের কপি সরবরাহ করা হলো।
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
             <!-- কজ লিস্ট প্রিন্ট ফরম্যাট -->
             <section id="printable-cause-list" class="hidden bg-white p-8 border my-4">
                 <div class="text-center leading-tight space-y-1 mb-6 border-b pb-4">
@@ -505,7 +584,6 @@
                     <h3 class="text-lg font-semibold">দৈনিক কার্যতালিকা (Cause List)</h3>
                     <p class="text-sm font-bold mt-1" id="print-causelist-date-title"></p>
                 </div>
-
                 <table class="w-full border-collapse border border-slate-400 text-xs">
                     <thead>
                         <tr class="bg-slate-100">
@@ -526,7 +604,6 @@
                     <h2 class="text-xl font-bold">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর</h2>
                     <h3 class="text-lg font-semibold">রেজিস্টার ১৩ (সকল বিবিধ মোকদ্দমাসমূহ)</h3>
                 </div>
-
                 <table class="w-full border-collapse border border-slate-400 text-xs">
                     <thead>
                         <tr class="bg-slate-100">
@@ -556,7 +633,6 @@
             <input type="hidden" id="edit-case-id">
             <input type="hidden" id="edit-entry-type">
 
-            <!-- মামলার মূল তথ্য এডিটিং ফিল্ডসমূহ -->
             <div id="case-fields-edit-group" class="grid grid-cols-1 md:grid-cols-2 gap-3 border-b pb-4">
                 <div class="md:col-span-2 text-xs font-bold text-emerald-800 bg-emerald-50 p-2 rounded">
                     📋 মামলার মূল তথ্যাাবলী (পেশকার কর্তৃক রুজুকৃত):
@@ -591,7 +667,6 @@
                 </div>
             </div>
 
-            <!-- আদেশের তারিখ ও বিবরণ -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold mb-1">আদেশের/নোটের তারিখ</label>
@@ -638,10 +713,9 @@
         let currentUser = null;
         let currentSelectedCase = null;
 
-        // পেজিনেশনের ভ্যারিয়েবল (সকল লিস্টে ১০ টি করে দেখাতে নির্দেশিত)
         let allCasesList = [];
         let reg13CasesList = [];
-        let statusFilter = 'all'; // সামারি ফিল্টারিংয়ের জন্য
+        let statusFilter = 'all';
         let currentPage = 1;
         let reg13CurrentPage = 1;
         const pageSize = 10;
@@ -649,13 +723,9 @@
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('causelist-date').value = todayStr;
 
-        // ==========================================
-        // 🔄 CLIENT SIDE ROUTER & URL MANAGEMENT
-        // ==========================================
         function navigateTo(pageId, queryParams = '') {
             let fullHash = '#' + pageId;
             if (queryParams) fullHash += '?' + queryParams;
-
             window.location.hash = fullHash;
         }
 
@@ -669,7 +739,6 @@
                 return;
             }
 
-            // সক্রিয় নেভিগেশন বাটনের স্টাইল আপডেট
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             const activeNavBtn = document.getElementById('nav-' + path);
             if (activeNavBtn) activeNavBtn.classList.add('active');
@@ -710,17 +779,11 @@
 
         window.addEventListener('hashchange', handleRouting);
 
-        // ==========================================
-        // 📊 ড্যাশবোর্ড সামারি ফিল্টার সার্ভিস
-        // ==========================================
         function filterFromSummary(status) {
             statusFilter = status;
             navigateTo('cases');
         }
 
-        // ==========================================
-        // HELPER FUNCTIONS
-        // ==========================================
         function toBanglaNum(str) {
             if (str === null || str === undefined) return '';
             const banglaDigits = {'0':'০', '1':'১', '2':'২', '3':'৩', '4':'৪', '5':'৫', '6':'৬', '7':'৭', '8':'৮', '9':'৯'};
@@ -737,7 +800,7 @@
             if (!dateString) return '...';
             const parts = dateString.split('-');
             if (parts.length !== 3) return toBanglaNum(dateString);
-            return `${toBanglaNum(parts[2])}/${toBanglaNum(parts[1])}/${toBanglaNum(parts[0])} খ্রি.`;
+            return `${toBanglaNum(parts[2])}/${toBanglaNum(parts[1])}/${toBanglaNum(parts[0])}`;
         }
 
         function convertFileToBase64(file) {
@@ -1000,9 +1063,6 @@
             }
         }
 
-        // ==========================================
-        // 📜 রেজিস্টার ১৩ লোড, শর্টিং ও পেজিনেশন লজিক
-        // ==========================================
         async function fetchRegister13() {
             const tbody = document.getElementById('register13-table-body');
             tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">ডাটা লোড ও শর্টিং হচ্ছে...</td></tr>';
@@ -1019,7 +1079,6 @@
                     let caseData = doc.data();
                     let caseId = doc.id;
 
-                    // আদেশের তারিখ ও শেষ আদেশের অবস্থা পাওয়ার জন্য সাব-কালেকশন আনা
                     let orderSnap = await db.collection('cases').doc(caseId).collection('orders').orderBy('createdAt', 'desc').limit(1).get();
                     let lastOrderDate = '';
                     let decisionStatus = "চলমান/প্রক্রিয়াধীন";
@@ -1027,7 +1086,6 @@
                     if (!orderSnap.empty) {
                         let lastOrder = orderSnap.docs[0].data();
                         
-                        // 🔒 নতুন পরিবর্তন: চূড়ান্ত নিষ্পত্তি (resolved) না হলে রেজিস্টার ১৩ তে আদেশের তারিখ দেখানো হবে না।
                         if (caseData.status === 'resolved') {
                             if (lastOrder.orderDate) lastOrderDate = lastOrder.orderDate;
 
@@ -1051,7 +1109,6 @@
                     });
                 }
 
-                // 🔢 কাস্টম শর্টিং: ২৫-২৬ আগে, তারপর ২৬-২৭; এবং ছোট থেকে বড় মামলা সংখ্যা
                 reg13CasesList.sort((a, b) => {
                     let parseCase = (caseNoStr) => {
                         let engNo = toEnglishNum(caseNoStr);
@@ -1066,7 +1123,6 @@
                     let pA = parseCase(a.caseNo);
                     let pB = parseCase(b.caseNo);
 
-                    // ২৫-২৬ সেশন কে অগ্রাধিকার
                     let getSessionWeight = (s) => {
                         if (s === '25-26') return 1;
                         if (s === '26-27') return 2;
@@ -1077,10 +1133,9 @@
                     let wB = getSessionWeight(pB.session);
 
                     if (wA !== wB) return wA - wB;
-                    return pA.num - pB.num; // ছোট থেকে বড়
+                    return pA.num - pB.num;
                 });
 
-                // প্রিন্ট ভিউ আপডেট
                 const printTbody = document.getElementById('print-register13-body');
                 let printRows = '';
                 reg13CasesList.forEach((item, idx) => {
@@ -1104,7 +1159,6 @@
             }
         }
 
-        // 🔢 রেজিস্টার ১৩ পেজিনেশন রেন্ডারিং
         function renderPaginatedRegister13() {
             const tbody = document.getElementById('register13-table-body');
 
@@ -1286,12 +1340,10 @@
 
             let result = allCasesList;
 
-            // ১. স্ট্যাটাস ড্যাশবোর্ড ফিল্টার প্রয়োগ (যদি ফিল্টার সিলেক্ট থাকে)
             if (statusFilter && statusFilter !== 'all') {
                 result = result.filter(data => data.status === statusFilter);
             }
 
-            // ২. সার্চ ইনপুট ফিল্টার প্রয়োগ
             if (!filterRaw) return result;
 
             return result.filter(data => {
@@ -1417,6 +1469,20 @@
                 if (dateA - dateB !== 0) return dateA - dateB;
                 return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
             });
+
+            const isResolved = currentSelectedCase && currentSelectedCase.status === 'resolved';
+            const peshkarEndorsBtn = document.getElementById('peshkar-endors-btn');
+            const judgeEndorsBtn = document.getElementById('judge-endors-btn');
+
+            if (peshkarEndorsBtn) {
+                if (isResolved) peshkarEndorsBtn.classList.remove('hidden');
+                else peshkarEndorsBtn.classList.add('hidden');
+            }
+
+            if (judgeEndorsBtn) {
+                if (isResolved) judgeEndorsBtn.classList.remove('hidden');
+                else judgeEndorsBtn.classList.add('hidden');
+            }
 
             if (currentUser && currentUser.role === 'judge') {
                 const lastEntry = rawList.length > 0 ? rawList[rawList.length - 1] : null;
@@ -1760,7 +1826,7 @@
         }
 
         function triggerPrint(elementId) {
-            document.querySelectorAll('#printable-area, #printable-notice, #printable-cause-list, #printable-register13').forEach(el => el.classList.remove('print-active'));
+            document.querySelectorAll('#printable-area, #printable-notice, #printable-cause-list, #printable-register13, #printable-endorsement').forEach(el => el.classList.remove('print-active'));
             const target = document.getElementById(elementId);
             target.classList.remove('hidden');
             target.classList.add('print-active');
@@ -1769,6 +1835,74 @@
 
         function previewOrderSheet() { triggerPrint('printable-area'); }
         function printCauseList() { triggerPrint('printable-cause-list'); }
+
+        async function previewEndorsementSheet() {
+            if (!currentSelectedCase) {
+                alert("অনুগ্রহ করে প্রথমে কোনো মামলা নির্বাচন করুন।");
+                return;
+            }
+
+            try {
+                const snapshot = await db.collection('cases').doc(currentSelectedCase.id).collection('orders').get();
+                let rawList = [];
+                snapshot.forEach(doc => rawList.push({ id: doc.id, ...doc.data() }));
+
+                if (rawList.length === 0) {
+                    alert("এই মামলার কোনো শুনানি পাওয়া যায়নি।");
+                    return;
+                }
+
+                rawList.sort((a, b) => {
+                    const dateA = new Date(a.orderDate);
+                    const dateB = new Date(b.orderDate);
+                    if (dateA - dateB !== 0) return dateA - dateB;
+                    return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+                });
+
+                const sessions = [];
+                rawList.forEach(item => {
+                    if (item.type === 'peshkar_note') {
+                        sessions.push({ peshkarNotes: [item.orderText], judgeOrders: [], date: item.orderDate });
+                    } else {
+                        if (sessions.length === 0) {
+                            sessions.push({ peshkarNotes: [], judgeOrders: [], date: item.orderDate });
+                        }
+                        const currentSession = sessions[sessions.length - 1];
+                        currentSession.judgeOrders.push(item.orderText);
+                        if (item.orderDate) currentSession.date = item.orderDate;
+                    }
+                });
+
+                const lastSession = sessions[sessions.length - 1];
+                const lastSerialNo = sessions.length;
+
+                const peshkarNoteText = lastSession.peshkarNotes.join('\n\n') || '';
+                const judgeVerdictText = lastSession.judgeOrders.join('\n\n') || '';
+
+                document.getElementById('endors-print-case-no').innerText = toBanglaNum(currentSelectedCase.caseNo);
+                document.getElementById('endors-print-subject').innerText = toBanglaNum(currentSelectedCase.subject);
+                document.getElementById('endors-print-plaintiff').innerText = toBanglaNum(currentSelectedCase.plaintiff);
+                document.getElementById('endors-print-defendant').innerText = toBanglaNum(currentSelectedCase.defendant);
+
+                document.getElementById('endors-serial-no').innerText = toBanglaNum(lastSerialNo);
+                document.getElementById('endors-date').innerText = formatBanglaDate(lastSession.date);
+                
+                let combinedContent = '';
+                if (peshkarNoteText) {
+                    combinedContent += `<p class="indent-8">${toBanglaNum(peshkarNoteText)}</p>`;
+                }
+                if (judgeVerdictText) {
+                    combinedContent += `<p class="indent-8 mt-2 font-normal text-black">${toBanglaNum(judgeVerdictText)}</p>`;
+                }
+                
+                document.getElementById('endors-peshkar-note').innerHTML = combinedContent;
+                document.getElementById('endors-judge-verdict').innerHTML = '';
+
+                triggerPrint('printable-endorsement');
+            } catch (err) {
+                alert("এন্ডর্সমেন্ট তথ্য লোড করতে সমস্যা হয়েছে: " + err.message);
+            }
+        }
 
         function previewNoticeSheet() {
             if (!currentSelectedCase) {
