@@ -10,8 +10,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* বিচারকের রায়/আদেশ: সকল প্যারাগ্রাফ জাস্টিফাইড */
-        #order-text, #edit-entry-text { text-align: justify; text-justify: inter-word; line-height: 1.7; }
+        /* বিচারকের রায়/আদেশ: সকল প্যারাগ্রাফ জাস্টিফাইড ও ফন্ট সাইজ ১ ধাপ বৃদ্ধি (text-sm / 14px) */
+        #order-text, #edit-entry-text { text-align: justify; text-justify: inter-word; line-height: 1.7; font-size: 0.875rem; }
         .order-justify { text-align: justify; text-justify: inter-word; }
         @font-face {
             font-family: 'NikoshBan';
@@ -39,8 +39,8 @@
             }
             #printable-endorsement {
                 padding: 10px !important;
-                font-size: 11.5px !important;
-                line-height: 1.25 !important;
+                font-size: 13px !important; /* এন্ডর্সমেন্ট প্রিন্ট ফন্ট সাইজ ১ ধাপ বৃদ্ধি */
+                line-height: 1.3 !important;
             }
             .no-print { display: none !important; }
         }
@@ -438,7 +438,8 @@
                     <div><strong>বিবাদী/প্রতিপক্ষ:</strong> <span id="print-defendant"></span></div>
                 </div>
 
-                <table class="w-full border-collapse border border-slate-400 text-xs">
+                <!-- আদেশনামা টেবিল: ফন্ট সাইজ ১ ধাপ বৃদ্ধি (text-sm) -->
+                <table class="w-full border-collapse border border-slate-400 text-sm">
                     <thead>
                         <tr class="bg-slate-100 border-b border-slate-400">
                             <th class="border border-slate-400 p-2 w-1/5 text-center">আদেশের ক্রমিক নং ও তারিখ</th>
@@ -511,45 +512,45 @@
             </section>
 
             <!-- ৫. এন্ডর্সমেন্ট প্রিন্ট ফরম্যাট -->
-            <section id="printable-endorsement" class="hidden bg-white p-4 my-2 max-w-4xl mx-auto text-xs leading-snug text-black">
+            <section id="printable-endorsement" class="hidden bg-white p-4 my-2 max-w-4xl mx-auto text-sm leading-relaxed text-black">
                 <!-- সরকারি ফরমের হেডার -->
                 <div class="mb-2 text-center leading-tight space-y-0">
-                    <p class="text-[10px] text-left mb-0.5">বাংলাদেশ ফরম নং- ২৭০</p>
-                    <p class="text-[11px] font-bold">আদেশপত্র</p>
-                    <p class="text-[10px] italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
-                    <p class="text-[10px]">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
-                    <p class="text-[10px]" id="endors-print-case-year-range"></p>
+                    <p class="text-xs text-left mb-0.5">বাংলাদেশ ফরম নং- ২৭০</p>
+                    <p class="text-xs font-bold">আদেশপত্র</p>
+                    <p class="text-xs italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
+                    <p class="text-xs">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                    <p class="text-xs" id="endors-print-case-year-range"></p>
                 </div>
                 
                 <!-- মামলার তথ্য বক্স -->
-                <div class="grid grid-cols-2 text-[11px] mb-2 border border-black p-1.5 leading-tight">
+                <div class="grid grid-cols-2 text-xs mb-2 border border-black p-1.5 leading-tight">
                     <div><strong>মামলা নম্বর:</strong> <span id="endors-print-case-no" class="font-bold"></span></div>
                     <div><strong>মামলার ধরণ:</strong> <span id="endors-print-subject"></span></div>
                     <div><strong>বাদী/আবেদনকারী:</strong> <span id="endors-print-plaintiff"></span></div>
                     <div><strong>বিবাদী/প্রতিপক্ষ:</strong> <span id="endors-print-defendant"></span></div>
                 </div>
 
-                <!-- মূল আদেশপত্র টেবিল -->
-                <table class="w-full border-collapse border border-black text-xs">
+                <!-- মূল আদেশপত্র ও এন্ডর্সমেন্ট টেবিল: ফন্ট সাইজ ১ ধাপ বৃদ্ধি (text-sm) -->
+                <table class="w-full border-collapse border border-black text-sm">
                     <tbody>
                         <tr>
-                            <td class="border border-black p-2 w-1/6 align-top text-center text-[11px]">
+                            <td class="border border-black p-2 w-1/6 align-top text-center text-xs">
                                 <div class="font-bold mb-1 border-b border-black pb-0.5" id="endors-serial-no"></div>
                                 <div class="font-semibold" id="endors-date"></div>
                             </td>
-                            <td class="border border-black p-3 w-4/6 align-top space-y-2 text-[11px]">
-                                <div class="space-y-1.5 text-justify leading-snug">
+                            <td class="border border-black p-3 w-4/6 align-top space-y-2 text-sm">
+                                <div class="space-y-1.5 text-justify leading-relaxed">
                                     <div id="endors-peshkar-note" class="whitespace-pre-line font-normal"></div>
                                     <div id="endors-judge-verdict" class="whitespace-pre-line font-normal space-y-1.5"></div>
                                 </div>
                                 <div class="pt-3 flex justify-end">
                                     <div class="text-center leading-tight">
-                                        <p class="font-bold text-[11px]">মোঃ রবিউল হাসান ভূঁইয়া</p>
-                                        <p class="font-normal text-[10px]">সহকারী কমিশনার (ভূমি)</p>
-                                        <p class="font-normal text-[10px]">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                                        <p class="font-bold text-sm">মোঃ রবিউল হাসান ভূঁইয়া</p>
+                                        <p class="font-normal text-xs">সহকারী কমিশনার (ভূমি)</p>
+                                        <p class="font-normal text-xs">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                                     </div>
                                 </div>
-                                <div class="pt-2 space-y-1 text-[10px]">
+                                <div class="pt-2 space-y-1 text-xs">
                                     <div class="space-y-0 font-normal">
                                         <p>আমার কথিত মতে</p>
                                         <p>টাইপকৃত ও সংশোধিত</p>
@@ -568,13 +569,13 @@
                                     </div>
                                     <div class="pt-4 flex justify-end">
                                         <div class="text-center leading-tight">
-                                            <p class="font-normal text-[10px]">সহকারী কমিশনার (ভূমি)</p>
-                                            <p class="font-normal text-[10px]">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                                            <p class="font-normal text-xs">সহকারী কমিশনার (ভূমি)</p>
+                                            <p class="font-normal text-xs">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                                         </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="border border-black p-2 w-1/6 align-top text-center font-normal text-[10px]" id="endors-action-taken">
+                            <td class="border border-black p-2 w-1/6 align-top text-center font-normal text-xs" id="endors-action-taken">
                                 ইউনিয়ন ভূমি সহকারী কর্মকর্তাকে রেকর্ড সংশোধনের জন্য আদেশের কপি সরবরাহ করা হলো।
                             </td>
                         </tr>
