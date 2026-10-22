@@ -10,6 +10,9 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* বিচারকের রায়/আদেশ: সকল প্যারাগ্রাফ জাস্টিফাইড */
+        #order-text, #edit-entry-text { text-align: justify; text-justify: inter-word; line-height: 1.7; }
+        .order-justify { text-align: justify; text-justify: inter-word; }
         @font-face {
             font-family: 'NikoshBan';
             src: url('https://raw.githubusercontent.com/mhozaifa/nikosh-font/master/NikoshBan.ttf') format('truetype');
@@ -99,6 +102,7 @@
 
 
             <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
+            <p class="text-[10px] text-slate-300 text-center mt-3">সংস্করণ: v5</p>
         </section>
 
         <!-- ৩. মূল ড্যাশবোর্ড নেভিগেশন বার -->
@@ -109,6 +113,7 @@
                 <button onclick="navigateTo('causelist')" id="nav-causelist" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition">📅 দৈনিক কার্যতালিকা</button>
                 <button onclick="navigateTo('cases')" id="nav-cases" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition">📂 চলমান মামলাসমূহ</button>
                 <button onclick="navigateTo('register13')" id="nav-register13" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition">📜 রেজিস্টার ১৩</button>
+                <button onclick="openSmsSettings()" id="nav-sms-settings" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition hidden">⚙️ SMS সেটিং</button>
                 <button onclick="navigateTo('case-entry')" id="nav-case-entry" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition hidden">➕ নতুন মামলা রুজু (পেশকার)</button>
             </nav>
 
@@ -146,6 +151,7 @@
                         <input type="date" id="causelist-date" class="border p-2 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                         <button onclick="fetchCauseList()" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800 transition">খুঁজুন</button>
                         <button onclick="printCauseList()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800 transition">প্রিন্ট করুন</button>
+                        <button onclick="openBulkSms()" class="bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-sky-800 transition">📱 সবাইকে SMS</button>
                     </div>
                 </div>
 
@@ -331,6 +337,7 @@
                         </div>
                         <div class="flex gap-2 flex-wrap">
                             <button type="submit" id="peshkar-submit-btn" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">নথি পেশ/উপস্থাপন সম্পন্ন করুন</button>
+                            <button type="button" onclick="openCaseSms()" class="bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-sky-800">📱 SMS পাঠান</button>
                             <button type="button" onclick="previewNoticeSheet()" class="bg-amber-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-amber-700">📩 শুনানীর নোটিশ প্রিন্ট করুন</button>
                             <button type="button" onclick="previewOrderSheet()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800">সম্পূর্ণ রায় / আদেশনামা দেখুন</button>
                             <button id="peshkar-endors-btn" type="button" onclick="previewEndorsementSheet()" class="hidden bg-purple-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-purple-800">🖨️ এন্ডর্সমেন্ট প্রিন্ট</button>
@@ -397,6 +404,7 @@
                         </div>
                         <div class="flex gap-2 flex-wrap">
                             <button id="judge-submit-btn" type="submit" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800 disabled:bg-slate-400 disabled:cursor-not-allowed">আদেশ প্রদান করুন ও পেশকারের নিকট পাঠান</button>
+                            <button type="button" onclick="openCaseSms()" class="bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-sky-800">📱 SMS পাঠান</button>
                             <button type="button" onclick="previewNoticeSheet()" class="bg-amber-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-amber-700">📩 শুনানীর নোটিশ প্রিন্ট করুন</button>
                             <button type="button" onclick="previewOrderSheet()" class="bg-slate-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-slate-800">আদেশনামা প্রাকদর্শন / প্রিন্ট</button>
                             <button id="judge-endors-btn" type="button" onclick="previewEndorsementSheet()" class="hidden bg-purple-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-purple-800">🖨️ এন্ডর্সমেন্ট প্রিন্ট</button>
@@ -617,6 +625,60 @@
 
         </div>
     </main>
+
+
+    <!-- 📱 SMS পাঠানোর মডাল -->
+    <div id="sms-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-3 my-8">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 id="sms-modal-title" class="text-base font-bold text-sky-800">📱 SMS পাঠান</h3>
+                <button onclick="closeSmsModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+            </div>
+            <div id="sms-recipients" class="space-y-1 text-sm"></div>
+            <div>
+                <label class="block text-xs font-semibold mb-1">অতিরিক্ত নম্বর (কমা দিয়ে, ঐচ্ছিক)</label>
+                <input type="text" id="sms-extra-numbers" class="w-full border rounded p-2 text-sm outline-none" placeholder="০১৭XXXXXXXX">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1">বার্তা</label>
+                <textarea id="sms-message" rows="4" oninput="updateSmsCounter()" class="w-full border rounded p-2 text-sm outline-none"></textarea>
+                <p id="sms-counter" class="text-[11px] text-slate-500 mt-1"></p>
+            </div>
+            <div id="sms-result" class="text-xs hidden"></div>
+            <div class="flex gap-2 justify-end">
+                <button onclick="closeSmsModal()" class="px-4 py-2 rounded text-sm border">বন্ধ করুন</button>
+                <button id="sms-send-btn" onclick="submitSms()" class="bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-sky-800 disabled:bg-slate-400">SMS পাঠান</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚙️ SMS সেটিং মডাল (বিচারক) -->
+    <div id="sms-settings-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-3 my-8">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-base font-bold text-sky-800">⚙️ SMS সেটিং (bulksmsbd.net)</h3>
+                <button onclick="closeSmsSettings()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1">API Key</label>
+                <input type="password" id="sms-api-key" class="w-full border rounded p-2 text-sm outline-none" autocomplete="off">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1">Sender ID</label>
+                <input type="text" id="sms-sender-id" class="w-full border rounded p-2 text-sm outline-none" value="8809648911052">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1">ডিফল্ট বার্তার ধরন (শুনানির নোটিশ)</label>
+                <textarea id="sms-template" rows="3" class="w-full border rounded p-2 text-sm outline-none"></textarea>
+                <p class="text-[11px] text-slate-500 mt-1">ব্যবহারযোগ্য: {caseNo} {nextDate}</p>
+            </div>
+            <div id="sms-settings-result" class="text-xs hidden"></div>
+            <div class="flex gap-2 justify-end flex-wrap">
+                <button onclick="checkSmsBalance()" class="px-4 py-2 rounded text-sm border">ব্যালেন্স দেখুন</button>
+                <button onclick="saveSmsSettings()" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">সংরক্ষণ করুন</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ✏️ এডিট করার মডাল -->
     <div id="edit-entry-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print overflow-y-auto">
@@ -887,6 +949,226 @@
             return `${toBanglaNum(parts[2])}/${toBanglaNum(parts[1])}/${toBanglaNum(parts[0])}`;
         }
 
+
+        // ================= SMS সার্ভিস (bulksmsbd.net) =================
+        const SMS_API_URL = 'https://bulksmsbd.net/api/smsapi';
+        const SMS_BALANCE_URL = 'https://bulksmsbd.net/api/getBalanceApi';
+        const DEFAULT_SMS_TEMPLATE = 'মামলা নং {caseNo}। পরবর্তী শুনানির তারিখ: {nextDate}। যথাসময়ে উপস্থিত থাকুন। সহকারী কমিশনার (ভূমি), বাঞ্ছারামপুর।';
+        let smsSettings = { apiKey: '', senderId: '8809648911052', template: DEFAULT_SMS_TEMPLATE };
+        let smsTargets = [];   // [{id, caseNo, numbers:[...], message}]
+
+        async function loadSmsSettings() {
+            try {
+                const local = JSON.parse(localStorage.getItem('sms-settings') || 'null');
+                if (local) smsSettings = { ...smsSettings, ...local };
+            } catch (e) {}
+            try {
+                const doc = await db.collection('settings').doc('sms').get();
+                if (doc.exists) {
+                    smsSettings = { ...smsSettings, ...doc.data() };
+                    try { localStorage.setItem('sms-settings', JSON.stringify(smsSettings)); } catch (e) {}
+                }
+            } catch (e) { console.warn('SMS settings:', e.code || e.message); }
+        }
+
+        function openSmsSettings() {
+            document.getElementById('sms-api-key').value = smsSettings.apiKey || '';
+            document.getElementById('sms-sender-id').value = smsSettings.senderId || '8809648911052';
+            document.getElementById('sms-template').value = smsSettings.template || DEFAULT_SMS_TEMPLATE;
+            const r = document.getElementById('sms-settings-result'); r.classList.add('hidden');
+            document.getElementById('sms-settings-modal').classList.remove('hidden');
+        }
+        function closeSmsSettings() { document.getElementById('sms-settings-modal').classList.add('hidden'); }
+
+        function showSettingsMsg(msg, ok) {
+            const r = document.getElementById('sms-settings-result');
+            r.className = 'text-xs ' + (ok ? 'text-emerald-700' : 'text-red-600');
+            r.innerText = msg;
+        }
+
+        async function saveSmsSettings() {
+            smsSettings = {
+                apiKey: document.getElementById('sms-api-key').value.trim(),
+                senderId: document.getElementById('sms-sender-id').value.trim(),
+                template: document.getElementById('sms-template').value.trim() || DEFAULT_SMS_TEMPLATE
+            };
+            try { localStorage.setItem('sms-settings', JSON.stringify(smsSettings)); } catch (e) {}
+            try {
+                await db.collection('settings').doc('sms').set(smsSettings);
+                showSettingsMsg('সংরক্ষিত হয়েছে।', true);
+            } catch (e) {
+                showSettingsMsg('এই ডিভাইসে সংরক্ষিত হয়েছে, কিন্তু সার্ভারে নয় (' + (e.code || e.message) + ')। Firestore Rules-এ settings ডকুমেন্টের অনুমতি দিন।', false);
+            }
+        }
+
+        // নম্বর স্বাভাবিকীকরণ: ০১৭৮২-১৭২০৭৮ → 8801782172078
+        function normalizeBdNumbers(raw) {
+            const eng = toEnglishNum(String(raw || ''));
+            const out = [];
+            eng.split(/[,;\n\/।]|\s{2,}|\s+(?=0?1\d)|\s+(?=880)/).forEach(part => {
+                let d = part.replace(/\D/g, '');
+                if (!d) return;
+                if (d.startsWith('00880')) d = d.slice(2);
+                if (d.length === 11 && d.startsWith('01')) d = '88' + d;
+                else if (d.length === 10 && d.startsWith('1')) d = '880' + d;
+                if (/^8801\d{9}$/.test(d) && !out.includes(d)) out.push(d);
+            });
+            return out;
+        }
+
+        function buildSmsMessage(c) {
+            return (smsSettings.template || DEFAULT_SMS_TEMPLATE)
+                .replace('{caseNo}', toBanglaNum(c.caseNo || ''))
+                .replace('{nextDate}', c.nextDate ? formatBanglaDate(c.nextDate) : 'পরে জানানো হবে');
+        }
+
+        function smsConfigured() {
+            if (!smsSettings.apiKey) {
+                alert(currentUser && currentUser.role === 'judge'
+                    ? 'আগে "⚙️ SMS সেটিং" থেকে API Key দিন।'
+                    : 'SMS API Key এখনও সেট করা হয়নি। বিচারককে সেটিং দিতে বলুন।');
+                return false;
+            }
+            return true;
+        }
+
+        // মূল সেন্ড ফাংশন। প্রথমে সরাসরি (উত্তর পড়া যায়), ব্রাউজার CORS আটকালে no-cors এ পাঠায়।
+        async function sendSmsRaw(numbers, message) {
+            const qs = new URLSearchParams({
+                api_key: smsSettings.apiKey, type: 'text',
+                number: numbers.join(','), senderid: smsSettings.senderId, message: message
+            });
+            const url = SMS_API_URL + '?' + qs.toString();
+            try {
+                const res = await fetch(url);
+                const txt = await res.text();
+                let j = null; try { j = JSON.parse(txt); } catch (e) {}
+                if (j && (j.response_code === 202 || j.response_code === '202')) return { ok: true, note: 'গৃহীত হয়েছে' };
+                return { ok: false, note: (j && (j.error_message || j.message)) || txt.slice(0, 120) || 'অজানা উত্তর' };
+            } catch (e) {
+                try {
+                    await fetch(url, { mode: 'no-cors' });
+                    return { ok: true, unconfirmed: true, note: 'পাঠানো হয়েছে (ব্রাউজার উত্তর পড়তে দেয়নি, ডেলিভারি নিশ্চিত নয়)' };
+                } catch (e2) {
+                    return { ok: false, note: 'নেটওয়ার্ক ত্রুটি: ' + (e2.message || e2) };
+                }
+            }
+        }
+
+        async function checkSmsBalance() {
+            if (!document.getElementById('sms-api-key').value.trim()) { showSettingsMsg('আগে API Key দিন।', false); return; }
+            const key = document.getElementById('sms-api-key').value.trim();
+            try {
+                const res = await fetch(SMS_BALANCE_URL + '?api_key=' + encodeURIComponent(key));
+                const txt = await res.text();
+                showSettingsMsg('ব্যালেন্স: ' + txt.slice(0, 150), true);
+            } catch (e) {
+                showSettingsMsg('ব্রাউজার থেকে ব্যালেন্স পড়া যায়নি (CORS)। bulksmsbd.net ড্যাশবোর্ডে দেখুন।', false);
+            }
+        }
+
+        function logSms(caseId, numbers, message, result) {
+            db.collection('cases').doc(caseId).collection('smsLogs').add({
+                numbers, message, ok: !!result.ok, note: result.note || '',
+                by: currentUser ? currentUser.email || currentUser.name : '',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(() => {});
+        }
+
+        function updateSmsCounter() {
+            const m = document.getElementById('sms-message').value;
+            const unicode = /[^\x00-\x7F]/.test(m);
+            const per = unicode ? (m.length > 70 ? 67 : 70) : (m.length > 160 ? 153 : 160);
+            document.getElementById('sms-counter').innerText =
+                `${toBanglaNum(m.length)} অক্ষর • আনুমানিক ${toBanglaNum(Math.max(1, Math.ceil(m.length / per)))}টি SMS/নম্বর`;
+        }
+
+        function showSmsResult(html, ok) {
+            const r = document.getElementById('sms-result');
+            r.className = 'text-xs ' + (ok ? 'text-emerald-700' : 'text-red-600');
+            r.innerHTML = html; r.classList.remove('hidden');
+        }
+
+        function openSmsModalFor(targets, title, editableMessage) {
+            smsTargets = targets;
+            document.getElementById('sms-modal-title').innerText = title;
+            document.getElementById('sms-result').classList.add('hidden');
+            document.getElementById('sms-extra-numbers').value = '';
+            document.getElementById('sms-send-btn').disabled = false;
+            const box = document.getElementById('sms-recipients');
+            const ta = document.getElementById('sms-message');
+            if (editableMessage) {
+                const t = targets[0];
+                box.innerHTML = [['বাদী', t.plaintiffNums], ['বিবাদী', t.defendantNums]].map(([lbl, nums], gi) =>
+                    nums.length ? nums.map((n, i) => `<label class="flex items-center gap-2"><input type="checkbox" class="sms-rcpt" value="${n}" checked> <span>${lbl}: ${toBanglaNum(n)}</span></label>`).join('') : `<p class="text-slate-400 text-xs">${lbl}: বৈধ মোবাইল নম্বর নেই</p>`
+                ).join('');
+                ta.value = t.message; ta.disabled = false;
+            } else {
+                const total = targets.reduce((a, t) => a + t.numbers.length, 0);
+                box.innerHTML = `<p>${toBanglaNum(targets.length)}টি মামলার মোট ${toBanglaNum(total)}টি নম্বরে প্রতিটি মামলার নিজস্ব শুনানির নোটিশ যাবে।</p>` +
+                    `<p class="text-slate-500 text-xs">বার্তা সেটিং-এর ডিফল্ট ধরন অনুযায়ী তৈরি হবে।</p>`;
+                ta.value = targets.length ? targets[0].message : ''; ta.disabled = true;
+            }
+            updateSmsCounter();
+            document.getElementById('sms-modal').classList.remove('hidden');
+        }
+        function closeSmsModal() { document.getElementById('sms-modal').classList.add('hidden'); }
+
+        function openCaseSms() {
+            if (!currentSelectedCase) { alert('প্রথমে মামলা নির্বাচন করুন।'); return; }
+            if (!smsConfigured()) return;
+            const c = currentSelectedCase;
+            openSmsModalFor([{
+                id: c.id, caseNo: c.caseNo,
+                plaintiffNums: normalizeBdNumbers(c.plaintiffMobile),
+                defendantNums: normalizeBdNumbers(c.defendantMobile),
+                numbers: [], message: buildSmsMessage(c)
+            }], '📱 SMS পাঠান — মামলা ' + toBanglaNum(c.caseNo || ''), true);
+        }
+
+        function openBulkSms() {
+            const date = document.getElementById('causelist-date').value;
+            if (!date) { alert('আগে তারিখ নির্বাচন করুন।'); return; }
+            if (!casesLoaded) { alert('ডাটা লোড হচ্ছে, একটু পরে চেষ্টা করুন।'); return; }
+            if (!smsConfigured()) return;
+            const targets = allCasesList.filter(c => c.nextDate === date).map(c => {
+                const nums = [...new Set([...normalizeBdNumbers(c.plaintiffMobile), ...normalizeBdNumbers(c.defendantMobile)])];
+                return { id: c.id, caseNo: c.caseNo, numbers: nums, message: buildSmsMessage(c) };
+            }).filter(t => t.numbers.length > 0);
+            if (targets.length === 0) { alert('এই তারিখের মামলাগুলোতে কোনো বৈধ মোবাইল নম্বর নেই।'); return; }
+            openSmsModalFor(targets, '📱 কার্যতালিকার সবাইকে SMS — ' + formatBanglaDate(date), false);
+        }
+
+        async function submitSms() {
+            const btn = document.getElementById('sms-send-btn');
+            btn.disabled = true; btn.innerText = 'পাঠানো হচ্ছে...';
+            try {
+                const single = document.getElementById('sms-message').disabled === false;
+                if (single) {
+                    const t = smsTargets[0];
+                    const nums = [...document.querySelectorAll('.sms-rcpt:checked')].map(i => i.value);
+                    normalizeBdNumbers(document.getElementById('sms-extra-numbers').value).forEach(n => { if (!nums.includes(n)) nums.push(n); });
+                    const msg = document.getElementById('sms-message').value.trim();
+                    if (nums.length === 0) { showSmsResult('অন্তত একটি বৈধ নম্বর নির্বাচন করুন।', false); return; }
+                    if (!msg) { showSmsResult('বার্তা খালি।', false); return; }
+                    const res = await sendSmsRaw(nums, msg);
+                    logSms(t.id, nums, msg, res);
+                    showSmsResult(`${res.ok ? '✔' : '✖'} ${nums.length}টি নম্বর — ${res.note}`, res.ok);
+                } else {
+                    let okCount = 0, fail = [];
+                    for (const t of smsTargets) {
+                        const res = await sendSmsRaw(t.numbers, t.message);
+                        logSms(t.id, t.numbers, t.message, res);
+                        if (res.ok) okCount++; else fail.push(`${toBanglaNum(t.caseNo)}: ${res.note}`);
+                    }
+                    showSmsResult(`✔ ${toBanglaNum(okCount)}টি মামলার SMS পাঠানো হয়েছে।` + (fail.length ? `<br>✖ ব্যর্থ: ${fail.join('; ')}` : ''), fail.length === 0);
+                }
+            } finally {
+                btn.disabled = false; btn.innerText = 'SMS পাঠান';
+            }
+        }
+        // ================= SMS সার্ভিস শেষ =================
+
         function convertFileToBase64(file) {
             return new Promise((resolve, reject) => {
                 if (!file) { resolve(null); return; }
@@ -911,12 +1193,15 @@
             if (currentUser.role === 'judge') {
                 document.getElementById('judge-dashboard-stats').classList.remove('hidden');
                 document.getElementById('nav-case-entry').classList.add('hidden');
+                document.getElementById('nav-sms-settings').classList.remove('hidden');
                 updateJudgeStats();
             } else {
                 document.getElementById('judge-dashboard-stats').classList.add('hidden');
                 document.getElementById('nav-case-entry').classList.remove('hidden');
+                document.getElementById('nav-sms-settings').classList.add('hidden');
             }
 
+            loadSmsSettings();
             startCasesListener();
             handleRouting();
         }
@@ -983,6 +1268,22 @@
             }
         });
 
+        function showAuthMessage(msg) {
+            const d = document.getElementById('auth-error');
+            if (!d) return;
+            d.innerText = msg;
+            d.classList.remove('hidden');
+        }
+
+        // অপ্রত্যাশিত ত্রুটি যেন নীরবে হারিয়ে না যায়
+        window.addEventListener('error', ev => {
+            if (!currentUser) showAuthMessage('ত্রুটি: ' + (ev.message || 'অজানা'));
+        });
+        window.addEventListener('unhandledrejection', ev => {
+            const r = ev.reason || {};
+            if (!currentUser) showAuthMessage('ত্রুটি: ' + (r.code || r.message || 'অজানা'));
+        });
+
         async function handleLogin(e) {
             e.preventDefault();
             const emailInput = document.getElementById('login-email').value.trim();
@@ -990,6 +1291,7 @@
             const errorDiv = document.getElementById('auth-error');
             const submitBtn = e.target.querySelector('button[type="submit"]');
 
+            let loginOk = false;
             errorDiv.classList.add('hidden');
             submitBtn.innerText = "লগইন হচ্ছে...";
             submitBtn.disabled = true;
@@ -1000,6 +1302,18 @@
                     auth.signInWithEmailAndPassword(emailInput, passwordInput),
                     new Promise((_, reject) => setTimeout(() => reject({ code: 'app/timeout' }), 15000))
                 ]);
+                loginOk = true;
+                // লগইন সফল — অ্যাপ খোলার জন্য সর্বোচ্চ ১২ সেকেন্ড অপেক্ষা, না খুললে কারণ দেখাবে
+                submitBtn.innerText = "প্রবেশ করা হচ্ছে...";
+                submitBtn.disabled = true;
+                setTimeout(() => {
+                    if (!currentUser) {
+                        showAuthMessage("লগইন সফল হয়েছে কিন্তু প্রোফাইল/ডাটা লোড হয়নি। ইন্টারনেট ও Firestore Rules পরীক্ষা করুন, তারপর পেজ রিলোড দিন।");
+                        submitBtn.innerText = "লগইন করুন";
+                        submitBtn.disabled = false;
+                    }
+                }, 12000);
+                return;
             } catch (error) {
                 console.error('লগইন ত্রুটি:', error);
                 const code = (error && error.code) || '';
@@ -1020,8 +1334,10 @@
                 errorDiv.innerText = msg;
                 errorDiv.classList.remove('hidden');
             } finally {
-                submitBtn.innerText = "লগইন করুন";
-                submitBtn.disabled = false;
+                if (!loginOk) {
+                    submitBtn.innerText = "লগইন করুন";
+                    submitBtn.disabled = false;
+                }
             }
         }
 
@@ -1689,7 +2005,7 @@
                     let editBtn = (currentUser && currentUser.role === 'judge') 
                         ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', '${j.nextDate || ''}', 'judge_order')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ ও তথ্য</button>`
                         : '';
-                    return `<p class="text-slate-800 font-medium mb-1">${toBanglaNum(j.orderText)} ${editBtn}</p>`;
+                    return `<p class="text-slate-800 font-medium mb-1 order-justify whitespace-pre-line">${toBanglaNum(j.orderText)} ${editBtn}</p>`;
                 }).join("");
 
                 let judgeTextRaw = session.judgeOrders.map(j => toBanglaNum(j.orderText)).join("\n");
@@ -1731,8 +2047,8 @@
                             <span class="font-normal text-[11px]">${date}</span>
                         </td>
                         <td class="border border-slate-400 p-3 leading-relaxed align-top">
-                            ${peshkarTextRaw ? `<p class="whitespace-pre-line mb-2 text-slate-700 font-normal">${peshkarTextRaw}</p>` : ''}
-                            ${judgeTextRaw ? `<p class="whitespace-pre-line mb-2 font-normal text-slate-900">${judgeTextRaw}</p>` : ''}
+                            ${peshkarTextRaw ? peshkarTextRaw.split(/\n+/).filter(t => t.trim()).map(t => `<p class="order-justify mb-2 text-slate-700 font-normal">${t}</p>`).join('') : ''}
+                            ${judgeTextRaw ? judgeTextRaw.split(/\n+/).filter(t => t.trim()).map(t => `<p class="order-justify mb-2 font-normal text-slate-900">${t}</p>`).join('') : ''}
                             ${nextDateInfo ? `<p class="mt-2 font-normal text-slate-800">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
                             ${judgeTextRaw ? aclandSignatureHTML : ''}
                         </td>
@@ -2039,10 +2355,10 @@
                 
                 let combinedContent = '';
                 if (peshkarNoteText) {
-                    combinedContent += `<p class="indent-8">${toBanglaNum(peshkarNoteText)}</p>`;
+                    combinedContent += `<p class="indent-8 order-justify">${toBanglaNum(peshkarNoteText)}</p>`;
                 }
                 if (judgeVerdictText) {
-                    combinedContent += `<p class="indent-8 mt-2 font-normal text-black">${toBanglaNum(judgeVerdictText)}</p>`;
+                    combinedContent += `<p class="indent-8 mt-2 font-normal text-black order-justify">${toBanglaNum(judgeVerdictText)}</p>`;
                 }
                 
                 document.getElementById('endors-peshkar-note').innerHTML = combinedContent;
