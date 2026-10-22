@@ -102,7 +102,7 @@
 
 
             <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
-            <p class="text-[10px] text-slate-300 text-center mt-3">সংস্করণ: v5</p>
+            <p class="text-[10px] text-slate-300 text-center mt-3">সংস্করণ: v6</p>
         </section>
 
         <!-- ৩. মূল ড্যাশবোর্ড নেভিগেশন বার -->
@@ -674,6 +674,7 @@
             </div>
             <div id="sms-settings-result" class="text-xs hidden"></div>
             <div class="flex gap-2 justify-end flex-wrap">
+                <button onclick="manualPublicSync()" class="px-4 py-2 rounded text-sm border">🔄 পাবলিক ট্র্যাকিং সিঙ্ক</button>
                 <button onclick="checkSmsBalance()" class="px-4 py-2 rounded text-sm border">ব্যালেন্স দেখুন</button>
                 <button onclick="saveSmsSettings()" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">সংরক্ষণ করুন</button>
             </div>
@@ -813,6 +814,7 @@
                 snapshot.forEach(doc => allCasesList.push({ id: doc.id, ...doc.data() }));
                 allCasesList.sort((a, b) => caseCreatedMs(b) - caseCreatedMs(a));
                 casesLoaded = true;
+                maybeAutoBackfill();
                 updateJudgeStats();
                 refreshActivePage();
             }, error => {
@@ -949,6 +951,65 @@
             return `${toBanglaNum(parts[2])}/${toBanglaNum(parts[1])}/${toBanglaNum(parts[0])}`;
         }
 
+
+
+        // ================= পাবলিক ট্র্যাকিং সিঙ্ক (publicCases) =================
+        // শুধু নিরাপদ তথ্য: মামলা নং, বিষয়, পক্ষ, অবস্থা, পরবর্তী তারিখ, সর্বশেষ আদেশ। মোবাইল/ফাইল নয়।
+        async function syncPublicCase(caseId) {
+            try {
+                const cdoc = await db.collection('cases').doc(caseId).get();
+                if (!cdoc.exists) { await db.collection('publicCases').doc(caseId).delete(); return true; }
+                const c = cdoc.data();
+                let last = '';
+                const o = await db.collection('cases').doc(caseId).collection('orders')
+                    .orderBy('createdAt', 'desc').limit(1).get();
+                if (!o.empty) last = o.docs[0].data().orderText || '';
+                await db.collection('publicCases').doc(caseId).set({
+                    caseNo: c.caseNo || '',
+                    subject: c.subject || '',
+                    plaintiff: c.plaintiff || '',
+                    defendant: c.defendant || '',
+                    status: c.status === 'resolved' ? 'resolved' : 'running',
+                    nextDate: c.nextDate || null,
+                    lastOrderText: last,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (e) {
+                console.warn('publicCases sync:', caseId, e.code || e.message);
+                return false;
+            }
+        }
+
+        async function backfillPublicCases() {
+            let okAll = true, done = 0;
+            const list = allCasesList.slice();
+            for (let i = 0; i < list.length; i += 5) {
+                const res = await Promise.all(list.slice(i, i + 5).map(c => syncPublicCase(c.id)));
+                res.forEach(r => { if (!r) okAll = false; });
+                done += res.length;
+            }
+            return { okAll, total: list.length };
+        }
+
+        async function manualPublicSync() {
+            if (!casesLoaded) { showSettingsMsg('ডাটা লোড হচ্ছে, একটু পরে চেষ্টা করুন।', false); return; }
+            showSettingsMsg('সিঙ্ক চলছে...', true);
+            const r = await backfillPublicCases();
+            if (r.okAll) { try { localStorage.setItem('public-backfill-v1', '1'); } catch (e) {} }
+            showSettingsMsg(r.okAll ? `${toBanglaNum(r.total)}টি মামলা সিঙ্ক হয়েছে।` : 'কিছু মামলা সিঙ্ক হয়নি — Firestore Rules-এ publicCases লেখার অনুমতি আছে কি দেখুন।', r.okAll);
+        }
+
+        let publicBackfillTried = false;
+        function maybeAutoBackfill() {
+            if (publicBackfillTried || !currentUser || currentUser.role !== 'judge' || !casesLoaded) return;
+            publicBackfillTried = true;
+            try { if (localStorage.getItem('public-backfill-v1')) return; } catch (e) {}
+            backfillPublicCases().then(r => {
+                if (r.okAll) { try { localStorage.setItem('public-backfill-v1', '1'); } catch (e) {} }
+            });
+        }
+        // ================= পাবলিক ট্র্যাকিং সিঙ্ক শেষ =================
 
         // ================= SMS সার্ভিস (bulksmsbd.net) =================
         const SMS_API_URL = 'https://bulksmsbd.net/api/smsapi';
@@ -1369,14 +1430,11 @@
                 const searchEng = toEnglishNum(rawSearchNo);
                 const searchBng = toBanglaNum(rawSearchNo);
 
-                // সব মামলা ডাউনলোড না করে শুধু মিলে যাওয়া নম্বর খোঁজা হচ্ছে
+                // পাবলিক ট্র্যাকিং শুধু publicCases থেকে পড়ে (মোবাইল নম্বর/নথি/ফাইল এখানে নেই)
                 const variants = [...new Set([rawSearchNo, searchEng, searchBng])];
-                const snapshot = await db.collection('cases').where('caseNo', 'in', variants).limit(5).get();
+                const snapshot = await db.collection('publicCases').where('caseNo', 'in', variants).limit(5).get();
                 let matchedDoc = null;
-
-                snapshot.forEach(doc => {
-                    if (!matchedDoc) matchedDoc = doc;
-                });
+                snapshot.forEach(doc => { if (!matchedDoc) matchedDoc = doc; });
 
                 if (!matchedDoc) {
                     resultDiv.innerHTML = `<p class="text-red-600 font-semibold">⚠️ '${toBanglaNum(rawSearchNo)}' নম্বরে কোনো মামলা পাওয়া যায়নি।</p>`;
@@ -1384,15 +1442,11 @@
                 }
 
                 const caseData = matchedDoc.data();
-                let statusText = caseData.status === 'resolved' 
-                    ? '<span class="text-green-700 font-bold">নিষ্পত্তি</span>' 
+                let statusText = caseData.status === 'resolved'
+                    ? '<span class="text-green-700 font-bold">নিষ্পত্তি</span>'
                     : `<span class="text-emerald-700 font-bold">চলমান</span> ${caseData.nextDate ? `(পরবর্তী শুনানির তারিখ: ${formatBanglaDate(caseData.nextDate)})` : ''}`;
 
-                const ordersSnapshot = await db.collection('cases').doc(matchedDoc.id).collection('orders').orderBy('createdAt', 'desc').limit(1).get();
-                let lastOrderText = "এখনও কোনো আদেশ প্রদান করা হয়নি।";
-                if (!ordersSnapshot.empty) {
-                    lastOrderText = toBanglaNum(ordersSnapshot.docs[0].data().orderText) || "নথি পেশ/উপস্থাপিত হয়েছে।";
-                }
+                const lastOrderText = toBanglaNum(caseData.lastOrderText) || "এখনও কোনো আদেশ প্রদান করা হয়নি।";
 
                 resultDiv.innerHTML = `
                     <div class="border-b pb-2">
@@ -1699,6 +1753,7 @@
                     file: fileObj,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+                await syncPublicCase(caseRef.id);
 
                 e.target.reset();
                 alert("মামলা সফলভাবে সংরক্ষণ করা হয়েছে।");
@@ -1741,6 +1796,7 @@
                 });
 
                 await db.collection('cases').doc(caseId).update({ status: 'judge_review' });
+                await syncPublicCase(caseId);
 
                 document.getElementById('peshkar-hearing-note').value = '';
                 document.getElementById('peshkar-hearing-file').value = '';
@@ -2164,6 +2220,7 @@
                 }
 
                 await db.collection('cases').doc(caseId).update(caseUpdatePayload);
+                await syncPublicCase(caseId);
 
                 alert("মামলার তথ্য সফলভাবে আপডেট করা হয়েছে।");
                 closeEditModal();
@@ -2222,6 +2279,7 @@
                     await db.collection('cases').doc(caseId).update({ status: 'peshkar_pending', nextDate: nextDate });
                 }
 
+                await syncPublicCase(caseId);
                 document.getElementById('order-text').value = '';
                 document.getElementById('next-date').value = '';
                 document.getElementById('judge-order-file').value = '';
@@ -2256,6 +2314,7 @@
                     await batch.commit();
 
                     await db.collection('cases').doc(caseId).delete();
+                    await syncPublicCase(caseId); // মামলা নেই বলে publicCases থেকেও মুছে যাবে
                     alert("মামলাটি সফলভাবে মুছে ফেলা হয়েছে।");
 
                     navigateTo('cases');
@@ -2278,6 +2337,7 @@
                         batch.delete(db.collection('cases').doc(caseId).collection('orders').doc(id));
                     });
                     await batch.commit();
+                    await syncPublicCase(caseId);
 
                     alert("আদেশটি ডিলিট করা হয়েছে।");
                     loadOrders(caseId);
