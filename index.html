@@ -7,11 +7,14 @@
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* বিচারকের রায়/আদেশ: সকল প্যারাগ্রাফ জাস্টিফাইড ও ফন্ট সাইজ ১ ধাপ বৃদ্ধি (text-sm / 14px) */
-        #order-text, #edit-entry-text { text-align: justify; text-justify: inter-word; line-height: 1.7; font-size: 0.875rem; }
+        /* বিচারকের রায়/আদেশ: সকল প্যারাগ্রাফ জাস্টিফাইড */
+        #order-text, #edit-entry-text { text-align: justify; text-justify: inter-word; line-height: 1.7; }
         .order-justify { text-align: justify; text-justify: inter-word; }
         @font-face {
             font-family: 'NikoshBan';
@@ -39,9 +42,37 @@
             }
             #printable-endorsement {
                 padding: 10px !important;
-                font-size: 13px !important; /* এন্ডর্সমেন্ট প্রিন্ট ফন্ট সাইজ ১ ধাপ বৃদ্ধি */
-                line-height: 1.3 !important;
+                font-size: 11.5px !important;
+                line-height: 1.25 !important;
             }
+            /* একাধিক পাতায় ছাপলে: কাটা না পড়ে, হেডার প্রতি পাতায়, টেবিলের সব দাগ থাকে */
+            #printable-area.print-active, #printable-endorsement.print-active {
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
+            #printable-area table, #printable-endorsement table {
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
+                border: 0 !important;
+                border-top: 1px solid #000 !important;
+                border-left: 1px solid #000 !important;
+            }
+            #printable-area th, #printable-area td,
+            #printable-endorsement th, #printable-endorsement td {
+                border: 0 !important;
+                border-right: 1px solid #000 !important;
+                border-bottom: 1px solid #000 !important;
+                -webkit-box-decoration-break: clone;
+                box-decoration-break: clone;
+            }
+            #printable-area thead, #printable-endorsement thead { display: table-header-group; }
+            #printable-area tfoot, #printable-endorsement tfoot { display: table-footer-group; }
+            /* আদেশ চলমান থাকবে: শেষ লাইনের পর বাকি লেখা পরের পাতায় যাবে */
+            #printable-area tr, #printable-endorsement tr { page-break-inside: auto; break-inside: auto; }
+            #printable-area td p, #printable-endorsement td p { orphans: 2; widows: 2; }
             .no-print { display: none !important; }
         }
 
@@ -51,15 +82,176 @@
             border-bottom: 3px solid #10b981;
         }
     </style>
+
+    <style id="ui-theme">
+    /* ===== আধুনিক UI থিম (শুধু স্ক্রিনে; প্রিন্টে প্রভাব নেই) ===== */
+    @media screen {
+        :root {
+            --g900:#064e3b; --g800:#065f46; --g700:#047857; --g600:#059669; --g100:#d1fae5; --g50:#ecfdf5;
+            --ink:#1f2937; --muted:#64748b; --line:#e2e8e4; --gold:#b7791f;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Hind Siliguri', 'Noto Sans Bengali', 'SolaimanLipi', system-ui, sans-serif !important;
+            background:
+                radial-gradient(1200px 400px at 50% -120px, rgba(5,150,105,.14), transparent 70%),
+                linear-gradient(180deg, #f3f7f5 0%, #eef2f0 100%) !important;
+            background-attachment: fixed;
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.55;
+        }
+        ::selection { background: var(--g100); color: var(--g900); }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #b6c6bf; border-radius: 10px; border: 2px solid #eef2f0; }
+        ::-webkit-scrollbar-thumb:hover { background: #8fa79c; }
+
+        /* হেডার */
+        body > header {
+            background: linear-gradient(135deg, var(--g900) 0%, var(--g700) 100%) !important;
+            border-bottom: 3px solid var(--gold);
+            box-shadow: 0 6px 20px -8px rgba(6,78,59,.55) !important;
+            position: sticky; top: 0; z-index: 40;
+        }
+        body > header .brand-emblem {
+            width: 44px; height: 44px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.45);
+            font-size: 22px; flex-shrink: 0;
+        }
+        body > header h1 { letter-spacing: .2px; }
+        body > header > div { flex-wrap: wrap; gap: 10px; }
+        #user-role-badge { background: rgba(255,255,255,.16) !important; border: 1px solid rgba(255,255,255,.3); backdrop-filter: blur(4px); }
+
+        /* কার্ড/সেকশন */
+        main section.bg-white, main nav.bg-white {
+            border: 1px solid var(--line);
+            border-radius: 18px !important;
+            box-shadow: 0 1px 2px rgba(16,24,20,.04), 0 10px 28px -14px rgba(16,24,20,.18) !important;
+        }
+        main section.bg-white.border-t-4 { border-top-width: 4px; }
+        main section h2 { letter-spacing: .1px; }
+        .app-page { animation: uiFadeUp .28s ease both; }
+        @keyframes uiFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+        /* নেভিগেশন */
+        #dashboard-nav { padding: 8px !important; gap: 6px !important; position: relative; }
+        .nav-btn {
+            border-radius: 12px !important; padding: 10px 16px !important; white-space: nowrap;
+            border: 1px solid transparent; color: #334155; transition: all .18s ease;
+        }
+        .nav-btn:hover { background: var(--g50) !important; border-color: var(--g100); }
+        .nav-btn.active {
+            background: linear-gradient(135deg, var(--g800), var(--g600)) !important;
+            color: #fff !important; border: 1px solid var(--g800) !important;
+            box-shadow: 0 6px 14px -6px rgba(5,150,105,.7);
+        }
+
+        /* স্ট্যাট কার্ড */
+        #judge-dashboard-stats .grid > div {
+            border-radius: 16px !important; position: relative; overflow: hidden;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        #judge-dashboard-stats .grid > div:hover { transform: translateY(-3px); box-shadow: 0 14px 24px -14px rgba(0,0,0,.35) !important; }
+        #judge-dashboard-stats .grid > div::after {
+            content: ''; position: absolute; right: -22px; top: -22px; width: 70px; height: 70px;
+            border-radius: 50%; background: currentColor; opacity: .06;
+        }
+        #judge-dashboard-stats .text-2xl { font-size: 2rem; line-height: 1.2; }
+
+        /* ফর্ম */
+        main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
+        main select, main textarea,
+        .fixed input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
+        .fixed select, .fixed textarea {
+            border: 1.5px solid #cfd9d4 !important; border-radius: 12px !important;
+            background: #fcfdfc; padding: 9px 12px !important;
+            transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+        }
+        main input:focus, main select:focus, main textarea:focus,
+        .fixed input:focus, .fixed select:focus, .fixed textarea:focus {
+            border-color: var(--g600) !important; background: #fff;
+            box-shadow: 0 0 0 4px rgba(5,150,105,.14) !important; outline: none !important;
+        }
+        input:disabled, select:disabled, textarea:disabled { background: #f1f5f3 !important; color: #94a3b8; }
+        input[type=file] { border-radius: 12px !important; }
+        input[type=checkbox] { accent-color: var(--g700); }
+        label { color: #334155; }
+        ::placeholder { color: #9aa9a2; }
+
+        /* বাটন */
+        main button, .fixed button, #auth-section button, body > header button {
+            border-radius: 11px; font-weight: 600;
+            transition: transform .12s ease, box-shadow .15s ease, background-color .15s ease, opacity .15s ease;
+        }
+        button[class*="bg-"]:not(:disabled) { box-shadow: 0 1px 2px rgba(0,0,0,.14), 0 4px 10px -6px rgba(0,0,0,.35); }
+        button[class*="bg-"]:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 8px 16px -8px rgba(0,0,0,.45); }
+        button:not(:disabled):active { transform: translateY(1px) scale(.99); box-shadow: none; }
+        button:disabled { opacity: .55; cursor: not-allowed; }
+        button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgba(5,150,105,.35); outline-offset: 2px; }
+
+        /* টেবিল */
+        main table { border-collapse: separate; border-spacing: 0; width: 100%; }
+        main thead tr { background: linear-gradient(180deg, #f1f8f4, #e6f2ec) !important; }
+        main thead th {
+            color: var(--g900); font-weight: 700; border-bottom: 2px solid #cfe5da !important;
+            white-space: nowrap;
+        }
+        main tbody td { border-bottom: 1px solid #eef2ef; vertical-align: top; }
+        main tbody tr { transition: background-color .12s ease; }
+        main tbody tr:hover { background: #f5fbf8; }
+        main tbody tr:last-child td { border-bottom: 0; }
+
+        /* ক্ষুদ্র উপাদান */
+        main .rounded-full, main .rounded.text-xs { font-weight: 600; }
+        #public-case-result, #sms-result, #sms-settings-result { border-radius: 14px; }
+        #public-case-result { background: linear-gradient(180deg,#f8fbf9,#f1f7f4) !important; border-color: #d4e4db !important; font-size: 13px; line-height: 1.7; }
+        #auth-error { background: #fef2f2; border: 1px solid #fecaca; padding: 8px 10px; border-radius: 10px; }
+
+        /* মডাল */
+        .fixed.inset-0 { background: rgba(10,25,20,.55) !important; backdrop-filter: blur(5px) !important; }
+        .fixed.inset-0 > div {
+            border-radius: 20px !important; border: 1px solid var(--line);
+            box-shadow: 0 30px 60px -20px rgba(0,0,0,.55) !important;
+            animation: uiPop .2s ease both;
+        }
+        @keyframes uiPop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+
+        /* লগইন ও পাবলিক কার্ড */
+        .card-emblem {
+            width: 56px; height: 56px; margin: -42px auto 10px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 26px;
+            background: linear-gradient(135deg, var(--g800), var(--g600)); color: #fff;
+            box-shadow: 0 10px 22px -8px rgba(5,150,105,.8); border: 3px solid #fff;
+        }
+        #auth-section, #public-tracking-section { margin-top: 38px; }
+        #auth-section h2 { font-size: 1.15rem; }
+
+        /* ফুটার */
+        .app-footer { text-align: center; color: #7b8a83; font-size: 12px; padding: 22px 12px 30px; }
+        .app-footer b { color: var(--g800); }
+
+        /* মোবাইল */
+        @media (max-width: 640px) {
+            main { padding: 12px !important; }
+            main section.bg-white { padding: 16px !important; border-radius: 16px !important; }
+            body > header h1 { font-size: 1.05rem; }
+            .nav-btn { padding: 9px 12px !important; }
+        }
+    }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans min-h-screen text-slate-800">
 
     <!-- হেডার -->
     <header class="bg-emerald-800 text-white p-4 shadow-md no-print">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-xl font-bold cursor-pointer" onclick="navigateTo('home')">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর</h1>
-                <p class="text-xs text-emerald-200">বিবিধ মোকদ্দমা ও ডিজিটাল আদেশনামা সিস্টেম</p>
+            <div class="flex items-center gap-3">
+                <span class="brand-emblem" aria-hidden="true">⚖️</span>
+                <div>
+                    <h1 class="text-xl font-bold cursor-pointer" onclick="navigateTo('home')">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর</h1>
+                    <p class="text-xs text-emerald-200">বিবিধ মোকদ্দমা ও ডিজিটাল আদেশনামা সিস্টেম</p>
+                </div>
             </div>
             <div id="user-info" class="hidden flex items-center gap-3">
                 <span id="user-role-badge" class="bg-emerald-600 px-3 py-1 rounded-full text-xs font-semibold"></span>
@@ -72,7 +264,8 @@
 
         <!-- ১. নাগরিক কেস ট্র্যাকিং সেকশন (Public view) -->
         <section id="public-tracking-section" class="app-page max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md border-t-4 border-emerald-700 no-print">
-            <h2 class="text-lg font-bold text-center text-emerald-800 mb-1">🔍 নাগরিক কেস ট্র্যাকিং (পাবলিক সার্ভিস)</h2>
+            <div class="card-emblem" aria-hidden="true">🔍</div>
+            <h2 class="text-lg font-bold text-center text-emerald-800 mb-1">নাগরিক কেস ট্র্যাকিং (পাবলিক সার্ভিস)</h2>
             <p class="text-xs text-slate-500 text-center mb-4">আপনার মামলার বর্তমান অবস্থা ও পরবর্তী শুনানির তারিখ জানতে মামলা নম্বর লিখুন</p>
             
             <div class="flex gap-2 mb-4">
@@ -85,6 +278,7 @@
 
         <!-- ২. লগইন সেকশন -->
         <section id="auth-section" class="app-page max-w-md mx-auto bg-white p-6 rounded-xl shadow-md mt-6 no-print">
+            <div class="card-emblem" aria-hidden="true">🔐</div>
             <h2 class="text-md font-bold text-center mb-1 text-emerald-800">অফিসিয়াল প্যানেলে প্রবেশ করুন</h2>
             <p class="text-xs text-slate-500 text-center mb-4">সহকারী কমিশনার (ভূমি) ও পেশকার আইডি</p>
 
@@ -102,7 +296,7 @@
 
 
             <div id="auth-error" class="text-red-600 text-xs mt-3 text-center hidden"></div>
-            <p class="text-[10px] text-slate-300 text-center mt-3">সংস্করণ: v6</p>
+            <p class="text-[10px] text-slate-300 text-center mt-3">সংস্করণ: v4</p>
         </section>
 
         <!-- ৩. মূল ড্যাশবোর্ড নেভিগেশন বার -->
@@ -392,7 +586,7 @@
 
                         <div>
                             <label class="block text-sm font-medium mb-1">আজকের শুনানীর পর্যালোচনা ও আদেশ (Order Details)</label>
-                            <textarea id="order-text" rows="4" required placeholder="নথি উপস্থাপন করা হলো..." class="w-full border p-2 rounded text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"></textarea>
+                            <textarea id="order-text" rows="4" required placeholder="নথি উপস্থাপন করা হলো..." class="w-full border p-2 rounded text-base disabled:bg-slate-100 disabled:cursor-not-allowed"></textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">আদেশের সাথে সম্পর্কিত নথি/প্রতিবেদন সংযুক্তি (ঐচ্ছিক, সর্বোচ্চ ৮০০ KB)</label>
@@ -410,6 +604,18 @@
                             <button id="judge-endors-btn" type="button" onclick="previewEndorsementSheet()" class="hidden bg-purple-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-purple-800">🖨️ এন্ডর্সমেন্ট প্রিন্ট</button>
                         </div>
                     </form>
+
+                    <!-- 📝 সংক্ষিপ্ত আদেশ নোট -->
+                    <div id="judge-note-block" class="border-t pt-4 space-y-2">
+                        <h3 class="text-sm font-bold text-sky-800">📝 সংক্ষিপ্ত আদেশ নোট <span class="font-normal text-xs text-slate-500">(শুধু বিচারকের জন্য — আদেশপত্র, এন্ডর্সমেন্ট ও পেশকারের কাছে দেখা যাবে না)</span></h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                            <input type="date" id="note-date" class="border p-2 rounded text-sm border-sky-400 outline-none">
+                            <textarea id="judge-note-text" rows="2" placeholder="সংক্ষিপ্ত নোট লিখুন..." class="md:col-span-3 border p-2 rounded text-base outline-none order-justify"></textarea>
+                        </div>
+                        <div class="flex gap-2 flex-wrap items-center">
+                            <button type="button" id="judge-note-save-btn" onclick="saveJudgeNote()" class="ml-auto bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-sky-800 disabled:bg-slate-400">📝 নোট সংরক্ষণ করুন</button>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- ইতিহাস ও বিস্তারিত -->
@@ -438,8 +644,7 @@
                     <div><strong>বিবাদী/প্রতিপক্ষ:</strong> <span id="print-defendant"></span></div>
                 </div>
 
-                <!-- আদেশনামা টেবিল: ফন্ট সাইজ ১ ধাপ বৃদ্ধি (text-sm) -->
-                <table class="w-full border-collapse border border-slate-400 text-sm">
+                <table class="w-full border-collapse border border-slate-400 text-xs">
                     <thead>
                         <tr class="bg-slate-100 border-b border-slate-400">
                             <th class="border border-slate-400 p-2 w-1/5 text-center">আদেশের ক্রমিক নং ও তারিখ</th>
@@ -512,45 +717,52 @@
             </section>
 
             <!-- ৫. এন্ডর্সমেন্ট প্রিন্ট ফরম্যাট -->
-            <section id="printable-endorsement" class="hidden bg-white p-4 my-2 max-w-4xl mx-auto text-sm leading-relaxed text-black">
+            <section id="printable-endorsement" class="hidden bg-white p-4 my-2 max-w-4xl mx-auto text-xs leading-snug text-black">
                 <!-- সরকারি ফরমের হেডার -->
                 <div class="mb-2 text-center leading-tight space-y-0">
-                    <p class="text-xs text-left mb-0.5">বাংলাদেশ ফরম নং- ২৭০</p>
-                    <p class="text-xs font-bold">আদেশপত্র</p>
-                    <p class="text-xs italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
-                    <p class="text-xs">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
-                    <p class="text-xs" id="endors-print-case-year-range"></p>
+                    <p class="text-[10px] text-left mb-0.5">বাংলাদেশ ফরম নং- ২৭০</p>
+                    <p class="text-[11px] font-bold">আদেশপত্র</p>
+                    <p class="text-[10px] italic">(১৯১৭ সালের রেকর্ড ম্যানুয়েলের ১২৯ নং বিধি)</p>
+                    <p class="text-[10px]">উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                    <p class="text-[10px]" id="endors-print-case-year-range"></p>
                 </div>
                 
                 <!-- মামলার তথ্য বক্স -->
-                <div class="grid grid-cols-2 text-xs mb-2 border border-black p-1.5 leading-tight">
+                <div class="grid grid-cols-2 text-[11px] mb-2 border border-black p-1.5 leading-tight">
                     <div><strong>মামলা নম্বর:</strong> <span id="endors-print-case-no" class="font-bold"></span></div>
                     <div><strong>মামলার ধরণ:</strong> <span id="endors-print-subject"></span></div>
                     <div><strong>বাদী/আবেদনকারী:</strong> <span id="endors-print-plaintiff"></span></div>
                     <div><strong>বিবাদী/প্রতিপক্ষ:</strong> <span id="endors-print-defendant"></span></div>
                 </div>
 
-                <!-- মূল আদেশপত্র ও এন্ডর্সমেন্ট টেবিল: ফন্ট সাইজ ১ ধাপ বৃদ্ধি (text-sm) -->
-                <table class="w-full border-collapse border border-black text-sm">
+                <!-- মূল আদেশপত্র টেবিল -->
+                <table class="w-full border-collapse border border-black text-xs">
+                    <thead>
+                        <tr class="border-b border-black">
+                            <th class="border border-black p-1.5 w-1/6 text-center text-[11px] font-bold">আদেশের ক্রমিক নং ও তারিখ</th>
+                            <th class="border border-black p-1.5 w-4/6 text-center text-[11px] font-bold">আদেশ ও অফিসারের স্বাক্ষর</th>
+                            <th class="border border-black p-1.5 w-1/6 text-center text-[11px] font-bold">আদেশের উপর গৃহীত ব্যবস্থা</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr>
-                            <td class="border border-black p-2 w-1/6 align-top text-center text-xs">
+                            <td class="border border-black p-2 w-1/6 align-top text-center text-[11px]">
                                 <div class="font-bold mb-1 border-b border-black pb-0.5" id="endors-serial-no"></div>
                                 <div class="font-semibold" id="endors-date"></div>
                             </td>
-                            <td class="border border-black p-3 w-4/6 align-top space-y-2 text-sm">
-                                <div class="space-y-1.5 text-justify leading-relaxed">
+                            <td class="border border-black p-3 w-4/6 align-top space-y-2 text-[13px]">
+                                <div class="space-y-1.5 text-justify leading-snug">
                                     <div id="endors-peshkar-note" class="whitespace-pre-line font-normal"></div>
                                     <div id="endors-judge-verdict" class="whitespace-pre-line font-normal space-y-1.5"></div>
                                 </div>
                                 <div class="pt-3 flex justify-end">
                                     <div class="text-center leading-tight">
-                                        <p class="font-bold text-sm">মোঃ রবিউল হাসান ভূঁইয়া</p>
-                                        <p class="font-normal text-xs">সহকারী কমিশনার (ভূমি)</p>
-                                        <p class="font-normal text-xs">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                                        <p class="font-bold text-[11px]">মোঃ রবিউল হাসান ভূঁইয়া</p>
+                                        <p class="font-normal text-[10px]">সহকারী কমিশনার (ভূমি)</p>
+                                        <p class="font-normal text-[10px]">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                                     </div>
                                 </div>
-                                <div class="pt-2 space-y-1 text-xs">
+                                <div class="pt-2 space-y-1 text-[10px]">
                                     <div class="space-y-0 font-normal">
                                         <p>আমার কথিত মতে</p>
                                         <p>টাইপকৃত ও সংশোধিত</p>
@@ -569,13 +781,13 @@
                                     </div>
                                     <div class="pt-4 flex justify-end">
                                         <div class="text-center leading-tight">
-                                            <p class="font-normal text-xs">সহকারী কমিশনার (ভূমি)</p>
-                                            <p class="font-normal text-xs">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
+                                            <p class="font-normal text-[10px]">সহকারী কমিশনার (ভূমি)</p>
+                                            <p class="font-normal text-[10px]">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                                         </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="border border-black p-2 w-1/6 align-top text-center font-normal text-xs" id="endors-action-taken">
+                            <td class="border border-black p-2 w-1/6 align-top text-center font-normal text-[10px]" id="endors-action-taken">
                                 ইউনিয়ন ভূমি সহকারী কর্মকর্তাকে রেকর্ড সংশোধনের জন্য আদেশের কপি সরবরাহ করা হলো।
                             </td>
                         </tr>
@@ -626,6 +838,11 @@
 
         </div>
     </main>
+
+    <footer class="app-footer no-print">
+        <b>উপজেলা ভূমি অফিস, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</b><br>
+        বিবিধ মোকদ্দমা ও ডিজিটাল আদেশনামা সিস্টেম
+    </footer>
 
 
     <!-- 📱 SMS পাঠানোর মডাল -->
@@ -741,7 +958,7 @@
 
             <div>
                 <label class="block text-xs font-semibold mb-1">বিবরণ / টেক্সট</label>
-                <textarea id="edit-entry-text" rows="4" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                <textarea id="edit-entry-text" rows="4" class="w-full border rounded p-2 text-base focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t">
@@ -954,6 +1171,41 @@
 
 
 
+
+        // ================= বিচারকের সংক্ষিপ্ত আদেশ নোট =================
+        async function saveJudgeNote() {
+            if (!currentUser || currentUser.role !== 'judge') { alert('শুধুমাত্র বিচারক নোট সংরক্ষণ করতে পারবেন।'); return; }
+            if (!currentSelectedCase) { alert('প্রথমে মামলা নির্বাচন করুন।'); return; }
+            const text = document.getElementById('judge-note-text').value.trim();
+            if (!text) { alert('নোট ফাঁকা রাখা যাবে না।'); return; }
+            const d = new Date(); const today = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            const date = document.getElementById('note-date').value || today;
+            const btn = document.getElementById('judge-note-save-btn');
+            btn.disabled = true;
+            try {
+                await db.collection('cases').doc(currentSelectedCase.id).collection('orders').add({
+                    type: 'judge_note', orderDate: date, orderText: text,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('judge-note-text').value = '';
+                loadOrders(currentSelectedCase.id);
+            } catch (err) {
+                alert('নোট সংরক্ষণ করতে সমস্যা: ' + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteJudgeNote(caseId, noteId) {
+            if (!currentUser || currentUser.role !== 'judge') return;
+            if (!confirm('এই নোটটি ডিলিট করতে চান?')) return;
+            try {
+                await db.collection('cases').doc(caseId).collection('orders').doc(noteId).delete();
+                loadOrders(caseId);
+            } catch (err) { alert('ডিলিট করতে সমস্যা: ' + err.message); }
+        }
+        // ================= নোট শেষ =================
+
         // ================= পাবলিক ট্র্যাকিং সিঙ্ক (publicCases) =================
         // শুধু নিরাপদ তথ্য: মামলা নং, বিষয়, পক্ষ, অবস্থা, পরবর্তী তারিখ, সর্বশেষ আদেশ। মোবাইল/ফাইল নয়।
         async function syncPublicCase(caseId) {
@@ -963,8 +1215,9 @@
                 const c = cdoc.data();
                 let last = '';
                 const o = await db.collection('cases').doc(caseId).collection('orders')
-                    .orderBy('createdAt', 'desc').limit(1).get();
-                if (!o.empty) last = o.docs[0].data().orderText || '';
+                    .orderBy('createdAt', 'desc').limit(5).get();
+                const lastDoc = o.docs.find(d => d.data().type !== 'judge_note'); // বিচারকের ব্যক্তিগত নোট পাবলিকে নয়
+                if (lastDoc) last = lastDoc.data().orderText || '';
                 await db.collection('publicCases').doc(caseId).set({
                     caseNo: c.caseNo || '',
                     subject: c.subject || '',
@@ -1569,9 +1822,10 @@
                     await Promise.all(missing.map(async c => {
                         try {
                             const snap = await db.collection('cases').doc(c.id).collection('orders')
-                                .orderBy('createdAt', 'desc').limit(1).get();
-                            if (!snap.empty) {
-                                const last = snap.docs[0].data();
+                                .orderBy('createdAt', 'desc').limit(5).get();
+                            const lastDocR = snap.docs.find(d => d.data().type !== 'judge_note');
+                            if (lastDocR) {
+                                const last = lastDocR.data();
                                 const info = { orderDate: last.orderDate || '', decisionStatus: getDecisionFromText(last.orderText) };
                                 reg13OrderCache.set(c.id, info);
                                 if (currentUser && currentUser.role === 'judge') {
@@ -1990,7 +2244,8 @@
             }
 
             if (currentUser && currentUser.role === 'judge') {
-                const lastEntry = rawList.length > 0 ? rawList[rawList.length - 1] : null;
+                const nonNoteList = rawList.filter(r => r.type !== 'judge_note');
+                const lastEntry = nonNoteList.length > 0 ? nonNoteList[nonNoteList.length - 1] : null;
                 const isPeshkarSubmitted = lastEntry && lastEntry.type === 'peshkar_note';
                 const isFormActive = isPeshkarSubmitted && currentSelectedCase.status !== 'resolved';
 
@@ -2010,6 +2265,12 @@
                 } else {
                     document.getElementById('judge-warning-msg').classList.remove('hidden');
                 }
+
+                const nd = document.getElementById('note-date');
+                if (nd && !nd.value) {
+                    const dd = new Date();
+                    nd.value = (lastEntry && lastEntry.orderDate) || new Date(dd.getTime() - dd.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                }
             }
 
             const sessions = [];
@@ -2022,7 +2283,7 @@
                     }
                     const currentSession = sessions[sessions.length - 1];
                     currentSession.judgeOrders.push(item);
-                    if (item.orderDate) currentSession.date = item.orderDate;
+                    if (item.orderDate && item.type !== 'judge_note') currentSession.date = item.orderDate;
                 }
             });
 
@@ -2030,8 +2291,9 @@
             let printOrdersHTML = '';
             let serialNo = 1;
 
-            let firstDateStr = rawList.length > 0 ? formatBanglaDate(rawList[0].orderDate) : '';
-            let lastDateStr = rawList.length > 0 ? formatBanglaDate(rawList[rawList.length - 1].orderDate) : '';
+            const printList = rawList.filter(r => r.type !== 'judge_note');
+            let firstDateStr = printList.length > 0 ? formatBanglaDate(printList[0].orderDate) : '';
+            let lastDateStr = printList.length > 0 ? formatBanglaDate(printList[printList.length - 1].orderDate) : '';
 
             const aclandSignatureHTML = `
                 <div class="mt-6 text-right pt-4 flex justify-end">
@@ -2044,6 +2306,18 @@
 
             for (const session of sessions) {
                 const date = formatBanglaDate(session.date);
+
+                // শুধু বিচারকের নোট আছে (এখনও কোনো আদেশ/নথি নেই): সিরিয়াল নম্বর ও প্রিন্ট ছাড়া শুধু বিচারককে দেখাও
+                const printableOrders = session.judgeOrders.filter(j => j.type !== 'judge_note');
+                if (session.peshkarNotes.length === 0 && printableOrders.length === 0) {
+                    if (currentUser && currentUser.role === 'judge') {
+                        historyDiv.innerHTML += session.judgeOrders.map(j =>
+                            `<div class="bg-white p-3 rounded shadow-sm border-l-4 border-sky-400"><p class="text-xs text-slate-500 mb-1">তারিখ: ${formatBanglaDate(j.orderDate)}</p>
+                             <p class="text-slate-800 order-justify whitespace-pre-line"><span class="text-sky-700 text-xs font-bold">📝 বিচারকের নোট:</span> ${toBanglaNum(j.orderText)}
+                             <button onclick="deleteJudgeNote('${caseId}', '${j.id}')" class="text-red-600 hover:underline text-xs font-semibold ml-1">🗑️</button></p></div>`).join('');
+                    }
+                    continue;
+                }
 
                 let peshkarContentHTML = session.peshkarNotes.map(n => {
                     let editBtn = (currentUser && currentUser.role === 'judge') 
@@ -2059,13 +2333,20 @@
                 ).join(" ");
 
                 let judgeContentHTML = session.judgeOrders.map(j => {
+                    if (j.type === 'judge_note') {
+                        const isJ = currentUser && currentUser.role === 'judge';
+                        if (!isJ) return '';
+                        const nEdit = isJ ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', '', 'judge_note')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট</button>
+                            <button onclick="deleteJudgeNote('${caseId}', '${j.id}')" class="text-red-600 hover:underline text-xs font-semibold ml-1">🗑️</button>` : '';
+                        return `<p class="text-slate-800 mb-1 order-justify whitespace-pre-line border-l-4 border-sky-400 pl-2"><span class="text-sky-700 text-xs font-bold">📝 বিচারকের নোট:</span> ${toBanglaNum(j.orderText)} ${nEdit}</p>`;
+                    }
                     let editBtn = (currentUser && currentUser.role === 'judge') 
                         ? `<button onclick="openEditModal('${caseId}', '${j.id}', \`${escapeQuotes(j.orderText)}\`, '${j.orderDate}', '${j.nextDate || ''}', 'judge_order')" class="text-amber-600 hover:underline text-xs font-semibold ml-2">✏️ এডিট আদেশ ও তথ্য</button>`
                         : '';
                     return `<p class="text-slate-800 font-medium mb-1 order-justify whitespace-pre-line">${toBanglaNum(j.orderText)} ${editBtn}</p>`;
                 }).join("");
 
-                let judgeTextRaw = session.judgeOrders.map(j => toBanglaNum(j.orderText)).join("\n");
+                let judgeTextRaw = session.judgeOrders.filter(j => j.type !== 'judge_note').map(j => toBanglaNum(j.orderText)).join("\n");
 
                 let judgeFilesHTML = session.judgeOrders.filter(j => j.file).map(j => 
                     `<a href="${j.file.data}" target="_blank" class="inline-flex items-center gap-1 text-blue-700 bg-blue-300 px-2 py-1 rounded my-1 text-xs font-semibold">📎 আদেশের ফাইল (${j.file.name})</a>`
@@ -2073,8 +2354,9 @@
 
                 let nextDateInfo = "";
                 if (session.judgeOrders.length > 0) {
-                    const lastOrder = session.judgeOrders[session.judgeOrders.length - 1];
-                    if (lastOrder.nextDate) nextDateInfo = formatBanglaDate(lastOrder.nextDate);
+                    const withNext = session.judgeOrders.filter(j => j.type !== 'judge_note' && j.nextDate);
+                    const lastOrder = withNext[withNext.length - 1];
+                    if (lastOrder) nextDateInfo = formatBanglaDate(lastOrder.nextDate);
                 }
 
                 let deleteOrderBtn = '';
@@ -2103,7 +2385,7 @@
                             ${toBanglaNum(serialNo)}<br>
                             <span class="font-normal text-[11px]">${date}</span>
                         </td>
-                        <td class="border border-slate-400 p-3 leading-relaxed align-top">
+                        <td class="border border-slate-400 p-3 leading-relaxed align-top text-sm">
                             ${peshkarTextRaw ? peshkarTextRaw.split(/\n+/).filter(t => t.trim()).map(t => `<p class="order-justify mb-2 text-slate-700 font-normal">${t}</p>`).join('') : ''}
                             ${judgeTextRaw ? judgeTextRaw.split(/\n+/).filter(t => t.trim()).map(t => `<p class="order-justify mb-2 font-normal text-slate-900">${t}</p>`).join('') : ''}
                             ${nextDateInfo ? `<p class="mt-2 font-normal text-slate-800">পরবর্তী তারিখ: ${nextDateInfo}</p>` : ''}
@@ -2153,6 +2435,9 @@
             if (entryType === 'judge_order') {
                 nextDateContainer.classList.remove('hidden');
                 document.getElementById('edit-modal-title').innerText = `বিচারকের আদেশ ও মামলার তথ্য এডিট করুন`;
+            } else if (entryType === 'judge_note') {
+                nextDateContainer.classList.add('hidden');
+                document.getElementById('edit-modal-title').innerText = `বিচারকের নোট ও মামলার তথ্য এডিট করুন`;
             } else {
                 nextDateContainer.classList.add('hidden');
                 document.getElementById('edit-modal-title').innerText = `পেশকার নোট ও মামলার তথ্য এডিট করুন`;
@@ -2214,7 +2499,7 @@
                 }
 
                 if (currentSelectedCase && currentSelectedCase.status === 'resolved' && entryType === 'judge_order'
-                    && currentOrdersRaw.length && currentOrdersRaw[currentOrdersRaw.length - 1].id === entryId) {
+                    && (([...currentOrdersRaw].reverse().find(o => o.type !== 'judge_note') || {}).id === entryId)) {
                     caseUpdatePayload.resolvedDate = updatedDate;
                     caseUpdatePayload.decision = getDecisionFromText(updatedText);
                     reg13OrderCache.delete(caseId);
@@ -2388,6 +2673,7 @@
 
                 const sessions = [];
                 rawList.forEach(item => {
+                    if (item.type === 'judge_note') return; // বিচারকের ব্যক্তিগত নোট এন্ডর্সমেন্টে নয়
                     if (item.type === 'peshkar_note') {
                         sessions.push({ peshkarNotes: [item.orderText], judgeOrders: [], date: item.orderDate });
                     } else {
@@ -2396,7 +2682,7 @@
                         }
                         const currentSession = sessions[sessions.length - 1];
                         currentSession.judgeOrders.push(item.orderText);
-                        if (item.orderDate) currentSession.date = item.orderDate;
+                        if (item.orderDate && item.type !== 'judge_note') currentSession.date = item.orderDate;
                     }
                 });
 
