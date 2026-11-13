@@ -308,6 +308,7 @@
                 <button onclick="navigateTo('cases')" id="nav-cases" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition">📂 চলমান মামলাসমূহ</button>
                 <button onclick="navigateTo('register13')" id="nav-register13" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition">📜 রেজিস্টার ১৩</button>
                 <button onclick="openSmsSettings()" id="nav-sms-settings" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition hidden">⚙️ SMS সেটিং</button>
+                <button onclick="openSignatureSettings()" id="nav-signature" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition hidden">✍️ স্বাক্ষর সেটিং</button>
                 <button onclick="navigateTo('case-entry')" id="nav-case-entry" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-emerald-50 transition hidden">➕ নতুন মামলা রুজু (পেশকার)</button>
             </nav>
 
@@ -710,6 +711,7 @@
 
                 <div class="pt-16 flex justify-end pr-12">
                     <div class="text-center leading-tight">
+                        <img class="sig-img hidden mx-auto" alt="" style="height:46px;margin-bottom:-2px;">
                         <p class="text-sm font-normal">সহকারী কমিশনার (ভূমি)</p>
                         <p class="text-sm font-normal">বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া</p>
                     </div>
@@ -895,6 +897,28 @@
                 <button onclick="manualPublicSync()" class="px-4 py-2 rounded text-sm border">🔄 পাবলিক ট্র্যাকিং সিঙ্ক</button>
                 <button onclick="checkSmsBalance()" class="px-4 py-2 rounded text-sm border">ব্যালেন্স দেখুন</button>
                 <button onclick="saveSmsSettings()" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">সংরক্ষণ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✍️ স্বাক্ষর সেটিং মডাল -->
+    <div id="signature-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-3 my-8">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-base font-bold text-emerald-800">✍️ স্বাক্ষর সেটিং</h3>
+                <button onclick="closeSignatureSettings()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+            </div>
+            <p class="text-xs text-slate-500">স্বাক্ষরের ছবি (সাদা/হালকা ব্যাকগ্রাউন্ডে কালো কালির ছবি ভালো) একবার আপলোড করুন। আদেশপত্র, এন্ডর্সমেন্ট ও নোটিশ প্রিন্টে সহকারী কমিশনার (ভূমি) এর স্থানে স্বয়ংক্রিয়ভাবে বসবে।</p>
+            <input type="file" id="signature-file" accept="image/*" onchange="previewSignatureFile()" class="w-full border p-1 rounded text-sm bg-slate-50">
+            <div class="border rounded-lg p-3 bg-white text-center min-h-[90px] flex items-center justify-center">
+                <img id="signature-preview" class="max-h-24 hidden" alt="স্বাক্ষর">
+                <p id="signature-empty" class="text-xs text-slate-400">কোনো স্বাক্ষর সংরক্ষিত নেই</p>
+            </div>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="signature-enabled" checked> প্রিন্টে স্বাক্ষর স্বয়ংক্রিয়ভাবে বসান</label>
+            <div id="signature-result" class="text-xs hidden"></div>
+            <div class="flex gap-2 justify-end flex-wrap">
+                <button onclick="removeSignature()" class="px-4 py-2 rounded text-sm border text-red-600">স্বাক্ষর মুছুন</button>
+                <button onclick="saveSignature()" class="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-emerald-800">সংরক্ষণ করুন</button>
             </div>
         </div>
     </div>
@@ -1509,14 +1533,17 @@
                 document.getElementById('judge-dashboard-stats').classList.remove('hidden');
                 document.getElementById('nav-case-entry').classList.add('hidden');
                 document.getElementById('nav-sms-settings').classList.remove('hidden');
+                document.getElementById('nav-signature').classList.remove('hidden');
                 updateJudgeStats();
             } else {
                 document.getElementById('judge-dashboard-stats').classList.add('hidden');
                 document.getElementById('nav-case-entry').classList.remove('hidden');
                 document.getElementById('nav-sms-settings').classList.add('hidden');
+                document.getElementById('nav-signature').classList.add('hidden');
             }
 
             loadSmsSettings();
+            loadSignature();
             startCasesListener();
             handleRouting();
         }
@@ -2633,7 +2660,132 @@
             }
         }
 
+        
+        // ================= স্বাক্ষর (অটো সাইন) =================
+        let signatureSettings = { data: 'data:image/png;base64,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', enabled: true };
+        let pendingSignature = null;
+
+        function applySignature() {
+            const on = signatureSettings.data && signatureSettings.enabled !== false;
+            document.querySelectorAll('.sig-img').forEach(img => {
+                if (on) { img.src = signatureSettings.data; img.classList.remove('hidden'); }
+                else { img.removeAttribute('src'); img.classList.add('hidden'); }
+            });
+        }
+
+        async function loadSignature() {
+            try {
+                const local = JSON.parse(localStorage.getItem('signature-settings') || 'null');
+                if (local) signatureSettings = { ...signatureSettings, ...local };
+            } catch (e) {}
+            applySignature();
+            try {
+                const doc = await db.collection('settings').doc('signature').get();
+                if (doc.exists) {
+                    signatureSettings = { ...signatureSettings, ...doc.data() };
+                    try { localStorage.setItem('signature-settings', JSON.stringify(signatureSettings)); } catch (e) {}
+                    applySignature();
+                }
+            } catch (e) { console.warn('signature:', e.code || e.message); }
+        }
+
+        function showSigMsg(msg, ok) {
+            const r = document.getElementById('signature-result');
+            r.className = 'text-xs ' + (ok ? 'text-emerald-700' : 'text-red-600');
+            r.innerText = msg; r.classList.remove('hidden');
+        }
+
+        function renderSignaturePreview(data) {
+            const img = document.getElementById('signature-preview');
+            const empty = document.getElementById('signature-empty');
+            if (data) { img.src = data; img.classList.remove('hidden'); empty.classList.add('hidden'); }
+            else { img.removeAttribute('src'); img.classList.add('hidden'); empty.classList.remove('hidden'); }
+        }
+
+        function openSignatureSettings() {
+            pendingSignature = null;
+            document.getElementById('signature-file').value = '';
+            document.getElementById('signature-enabled').checked = signatureSettings.enabled !== false;
+            document.getElementById('signature-result').classList.add('hidden');
+            renderSignaturePreview(signatureSettings.data);
+            document.getElementById('signature-modal').classList.remove('hidden');
+        }
+        function closeSignatureSettings() { document.getElementById('signature-modal').classList.add('hidden'); }
+
+        // ছবি ছোট করে, সাদা ব্যাকগ্রাউন্ড স্বচ্ছ করে PNG বানায় (যাতে লেখার উপর সুন্দরভাবে বসে)
+        function processSignatureFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('ছবিটি পড়া যায়নি।'));
+                    img.onload = () => {
+                        const maxW = 500;
+                        const scale = Math.min(1, maxW / img.width);
+                        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+                        const cv = document.createElement('canvas');
+                        cv.width = w; cv.height = h;
+                        const ctx = cv.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const id = ctx.getImageData(0, 0, w, h);
+                        const d = id.data;
+                        for (let i = 0; i < d.length; i += 4) {
+                            const lum = (d[i] + d[i + 1] + d[i + 2]) / 3;
+                            let a;
+                            if (lum >= 230) a = 0;
+                            else if (lum <= 130) a = 255;
+                            else a = Math.round((230 - lum) / 100 * 255);
+                            d[i + 3] = Math.min(d[i + 3], a);
+                        }
+                        ctx.putImageData(id, 0, 0);
+                        resolve(cv.toDataURL('image/png'));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function previewSignatureFile() {
+            const f = document.getElementById('signature-file').files[0];
+            if (!f) return;
+            try {
+                pendingSignature = await processSignatureFile(f);
+                renderSignaturePreview(pendingSignature);
+                showSigMsg('প্রাকদর্শন ঠিক থাকলে "সংরক্ষণ করুন" চাপুন।', true);
+            } catch (e) { showSigMsg(e.message || 'ছবি প্রসেস করা যায়নি।', false); }
+        }
+
+        async function saveSignature() {
+            if (!currentUser || currentUser.role !== 'judge') { alert('শুধুমাত্র বিচারক স্বাক্ষর সেট করতে পারবেন।'); return; }
+            const data = pendingSignature || signatureSettings.data || '';
+            if (data.length > 700000) { showSigMsg('ছবিটি অনেক বড়, ছোট ছবি ব্যবহার করুন।', false); return; }
+            signatureSettings = { data, enabled: document.getElementById('signature-enabled').checked };
+            try { localStorage.setItem('signature-settings', JSON.stringify(signatureSettings)); } catch (e) {}
+            applySignature();
+            try {
+                await db.collection('settings').doc('signature').set(signatureSettings);
+                showSigMsg('সংরক্ষিত হয়েছে।', true);
+            } catch (e) {
+                showSigMsg('এই ডিভাইসে সংরক্ষিত হয়েছে, কিন্তু সার্ভারে নয় (' + (e.code || e.message) + ')। Firestore Rules-এ settings/signature এর অনুমতি দিন।', false);
+            }
+        }
+
+        async function removeSignature() {
+            if (!currentUser || currentUser.role !== 'judge') return;
+            if (!confirm('সংরক্ষিত স্বাক্ষর মুছে ফেলতে চান?')) return;
+            signatureSettings = { data: '', enabled: true };
+            pendingSignature = null;
+            try { localStorage.removeItem('signature-settings'); } catch (e) {}
+            applySignature(); renderSignaturePreview('');
+            try { await db.collection('settings').doc('signature').delete(); } catch (e) {}
+            showSigMsg('স্বাক্ষর মুছে ফেলা হয়েছে।', true);
+        }
+        // ================= স্বাক্ষর শেষ =================
+
         function triggerPrint(elementId) {
+            applySignature();
             document.querySelectorAll('#printable-area, #printable-notice, #printable-cause-list, #printable-register13, #printable-endorsement').forEach(el => el.classList.remove('print-active'));
             const target = document.getElementById(elementId);
             target.classList.remove('hidden');
